@@ -2059,6 +2059,10 @@ cdef class BackupEngine(object):
         with nogil:
             self.engine.StopBackup()
 
+    def garbage_collect(self):
+        with nogil:
+            self.engine.GarbageCollect()
+
     def purge_old_backups(self, num_backups_to_keep):
         cdef Status st
         cdef uint32_t c_num_backups_to_keep

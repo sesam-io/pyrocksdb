@@ -25,6 +25,7 @@ cdef extern from "rocksdb/utilities/backupable_db.h" namespace "rocksdb":
         Status PurgeOldBackups(uint32_t) nogil except+
         Status DeleteBackup(BackupID) nogil except+
         void StopBackup() nogil except+
+        void GarbageCollect() nogil except+
         void GetBackupInfo(vector[BackupInfo]*) nogil except+
         Status RestoreDBFromBackup(BackupID, string&, string&) nogil except+
         Status RestoreDBFromLatestBackup(string&, string&) nogil except+
