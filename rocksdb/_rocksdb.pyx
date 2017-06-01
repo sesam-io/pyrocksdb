@@ -1729,6 +1729,7 @@ cdef class DB(object):
         ret = []
         for ob in metadata:
             t = {}
+            t['column_family_name'] = ob.column_family_name
             t['name'] = string_to_path(ob.name)
             t['level'] = ob.level
             t['size'] = ob.size

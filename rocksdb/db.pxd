@@ -54,6 +54,7 @@ cdef extern from "rocksdb/db.h" namespace "rocksdb":
     ctypedef uint64_t SequenceNumber
 
     cdef struct LiveFileMetaData:
+        string column_family_name
         string name
         int level
         uint64_t size
