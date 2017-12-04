@@ -150,8 +150,8 @@ cdef extern from "rocksdb/options.h" namespace "rocksdb":
         # int level0_slowdown_writes_trigger
         # int level0_stop_writes_trigger
         # # int max_mem_compaction_level # DEPRECATED
-        # uint64_t target_file_size_base
-        # int target_file_size_multiplier
+        uint64_t target_file_size_base
+        int target_file_size_multiplier
         # uint64_t max_bytes_for_level_base
         # bool level_compaction_dynamic_level_bytes
         # int max_bytes_for_level_multiplier

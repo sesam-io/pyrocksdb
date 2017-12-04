@@ -729,6 +729,29 @@ cdef class ColumnFamilyOptions(object):
         if not self.opts == NULL:
             del self.opts
 
+    def __init__(self, **kwargs):
+        for key, value in kwargs.items():
+            setattr(self, key, value)
+
+    property write_buffer_size:
+        def __get__(self):
+            return self.opts.write_buffer_size
+        def __set__(self, value):
+            self.opts.write_buffer_size = value
+
+    property target_file_size_base:
+        def __get__(self):
+            return self.opts.target_file_size_base
+        def __set__(self, value):
+            self.opts.target_file_size_base = value
+
+    property target_file_size_multiplier:
+        def __get__(self):
+            return self.opts.target_file_size_multiplier
+        def __set__(self, value):
+            self.opts.target_file_size_multiplier = value
+
+
 cdef class Options(object):
     cdef options.Options* opts
     cdef PyComparator py_comparator
@@ -1369,6 +1392,7 @@ cdef class DB(object):
         cdef string db_path
         cdef vector[db.ColumnFamilyDescriptor] column_family_descs
         cdef vector[db.ColumnFamilyHandle*] column_family_handles
+        cdef ColumnFamilyOptions column_family_options
 
         self.db = NULL
         self.opts = None
@@ -1394,8 +1418,13 @@ cdef class DB(object):
                         cython.address(self.db))
             check_status(st)
         else:
-            for column_family_name in column_families:
-              column_family_descs.push_back(db.ColumnFamilyDescriptor(column_family_name, options.ColumnFamilyOptions()))
+            if isinstance(column_families, dict):
+                for column_family_name, cf_opts in column_families.items():
+                    column_family_options = cf_opts
+                    column_family_descs.push_back(db.ColumnFamilyDescriptor(column_family_name, deref(column_family_options.opts)))
+            else:
+                for column_family_name in column_families:
+                    column_family_descs.push_back(db.ColumnFamilyDescriptor(column_family_name, options.ColumnFamilyOptions()))
 
             if read_only:
                 with nogil:
@@ -1786,12 +1815,16 @@ cdef class DB(object):
 
         check_status(st)
 
-    def create_column_family(self, name):
+    def create_column_family(self, name, ColumnFamilyOptions column_family_options=None):
         cdef db.ColumnFamilyHandle* cf_handle
         cdef Status st
         cdef options.ColumnFamilyOptions coptions
 
-        coptions = options.ColumnFamilyOptions()
+        if column_family_options is None:
+            coptions = options.ColumnFamilyOptions()
+        else:
+            coptions = deref(column_family_options.opts)
+
         st = self.db.CreateColumnFamily(coptions, name, &cf_handle)
         check_status(st)
 

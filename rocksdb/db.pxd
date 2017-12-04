@@ -246,4 +246,4 @@ cdef extern from "rocksdb/db.h" namespace "rocksdb":
         ColumnFamilyDescriptor(const string&,
                                const options.ColumnFamilyOptions&) nogil except+
         string name
-        options.ColumnFamilyOptions options
+        options.Options options
