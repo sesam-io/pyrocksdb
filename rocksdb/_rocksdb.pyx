@@ -558,7 +558,8 @@ cdef class BlockBasedTableFactory(PyTableFactory):
             block_size=None,
             block_size_deviation=None,
             block_restart_interval=None,
-            whole_key_filtering=None):
+            whole_key_filtering=None,
+            cache_index_and_filter_blocks=None):
 
         cdef table_factory.BlockBasedTableOptions table_options
 
@@ -619,6 +620,9 @@ cdef class BlockBasedTableFactory(PyTableFactory):
                 self.py_filter_policy = PyGenericFilterPolicy(filter_policy)
 
             table_options.filter_policy = self.py_filter_policy.get_policy()
+
+        if cache_index_and_filter_blocks is not None:
+            table_options.cache_index_and_filter_blocks = cache_index_and_filter_blocks
 
         self.factory.reset(table_factory.NewBlockBasedTableFactory(table_options))
 
@@ -716,6 +720,12 @@ cdef class ColumnFamilyHandle(object):
 
 cdef class ColumnFamilyOptions(object):
     cdef options.ColumnFamilyOptions* opts
+    cdef PyComparator py_comparator
+    cdef PyMergeOperator py_merge_operator
+    cdef PySliceTransform py_prefix_extractor
+    cdef PyTableFactory py_table_factory
+    cdef PyMemtableFactory py_memtable_factory
+    cdef PyCache py_row_cache
 
     # Used to protect sharing of Options with many DB-objects
     cdef cpp_bool in_use
@@ -730,14 +740,120 @@ cdef class ColumnFamilyOptions(object):
             del self.opts
 
     def __init__(self, **kwargs):
+        self.py_comparator = BytewiseComparator()
+        self.py_merge_operator = None
+        self.py_prefix_extractor = None
+        self.py_table_factory = None
+        self.py_memtable_factory = None
+        self.py_row_cache = None
+
         for key, value in kwargs.items():
             setattr(self, key, value)
+
+#     property create_if_missing:
+#         def __get__(self):
+#             return self.opts.create_if_missing
+#         def __set__(self, value):
+#             self.opts.create_if_missing = value
+
+#     property error_if_exists:
+#         def __get__(self):
+#             return self.opts.error_if_exists
+#         def __set__(self, value):
+#             self.opts.error_if_exists = value
+
+#     property paranoid_checks:
+#         def __get__(self):
+#             return self.opts.paranoid_checks
+#         def __set__(self, value):
+#             self.opts.paranoid_checks = value
 
     property write_buffer_size:
         def __get__(self):
             return self.opts.write_buffer_size
         def __set__(self, value):
             self.opts.write_buffer_size = value
+
+    property max_write_buffer_number:
+        def __get__(self):
+            return self.opts.max_write_buffer_number
+        def __set__(self, value):
+            self.opts.max_write_buffer_number = value
+
+    property min_write_buffer_number_to_merge:
+        def __get__(self):
+            return self.opts.min_write_buffer_number_to_merge
+        def __set__(self, value):
+            self.opts.min_write_buffer_number_to_merge = value
+
+#     property max_open_files:
+#         def __get__(self):
+#             return self.opts.max_open_files
+#         def __set__(self, value):
+#             self.opts.max_open_files = value
+
+    property compression:
+        def __get__(self):
+            if self.opts.compression == options.kNoCompression:
+                return CompressionType.no_compression
+            elif self.opts.compression  == options.kSnappyCompression:
+                return CompressionType.snappy_compression
+            elif self.opts.compression == options.kZlibCompression:
+                return CompressionType.zlib_compression
+            elif self.opts.compression == options.kBZip2Compression:
+                return CompressionType.bzip2_compression
+            elif self.opts.compression == options.kLZ4Compression:
+                return CompressionType.lz4_compression
+            elif self.opts.compression == options.kLZ4HCCompression:
+                return CompressionType.lz4hc_compression
+            else:
+                raise Exception("Unknown type: %s" % self.opts.compression)
+
+        def __set__(self, value):
+            if value == CompressionType.no_compression:
+                self.opts.compression = options.kNoCompression
+            elif value == CompressionType.snappy_compression:
+                self.opts.compression = options.kSnappyCompression
+            elif value == CompressionType.zlib_compression:
+                self.opts.compression = options.kZlibCompression
+            elif value == CompressionType.bzip2_compression:
+                self.opts.compression = options.kBZip2Compression
+            elif value == CompressionType.lz4_compression:
+                self.opts.compression = options.kLZ4Compression
+            elif value == CompressionType.lz4hc_compression:
+                self.opts.compression = options.kLZ4HCCompression
+            else:
+                raise TypeError("Unknown compression: %s" % value)
+
+    property num_levels:
+        def __get__(self):
+            return self.opts.num_levels
+        def __set__(self, value):
+            self.opts.num_levels = value
+
+    property level0_file_num_compaction_trigger:
+        def __get__(self):
+            return self.opts.level0_file_num_compaction_trigger
+        def __set__(self, value):
+            self.opts.level0_file_num_compaction_trigger = value
+
+    property level0_slowdown_writes_trigger:
+        def __get__(self):
+            return self.opts.level0_slowdown_writes_trigger
+        def __set__(self, value):
+            self.opts.level0_slowdown_writes_trigger = value
+
+    property level0_stop_writes_trigger:
+        def __get__(self):
+            return self.opts.level0_stop_writes_trigger
+        def __set__(self, value):
+            self.opts.level0_stop_writes_trigger = value
+
+    property max_mem_compaction_level:
+        def __get__(self):
+            return self.opts.max_mem_compaction_level
+        def __set__(self, value):
+            self.opts.max_mem_compaction_level = value
 
     property target_file_size_base:
         def __get__(self):
@@ -750,6 +866,382 @@ cdef class ColumnFamilyOptions(object):
             return self.opts.target_file_size_multiplier
         def __set__(self, value):
             self.opts.target_file_size_multiplier = value
+
+    property max_bytes_for_level_base:
+        def __get__(self):
+            return self.opts.max_bytes_for_level_base
+        def __set__(self, value):
+            self.opts.max_bytes_for_level_base = value
+
+    property max_bytes_for_level_multiplier:
+        def __get__(self):
+            return self.opts.max_bytes_for_level_multiplier
+        def __set__(self, value):
+            self.opts.max_bytes_for_level_multiplier = value
+
+    property max_bytes_for_level_multiplier_additional:
+        def __get__(self):
+            return self.opts.max_bytes_for_level_multiplier_additional
+        def __set__(self, value):
+            self.opts.max_bytes_for_level_multiplier_additional = value
+
+    property expanded_compaction_factor:
+        def __get__(self):
+            return self.opts.expanded_compaction_factor
+        def __set__(self, value):
+            self.opts.expanded_compaction_factor = value
+
+    property source_compaction_factor:
+        def __get__(self):
+            return self.opts.source_compaction_factor
+        def __set__(self, value):
+            self.opts.source_compaction_factor = value
+
+    property max_grandparent_overlap_factor:
+        def __get__(self):
+            return self.opts.max_grandparent_overlap_factor
+        def __set__(self, value):
+            self.opts.max_grandparent_overlap_factor = value
+
+#     property disable_data_sync:
+#         def __get__(self):
+#             return self.opts.disableDataSync
+#         def __set__(self, value):
+#             self.opts.disableDataSync = value
+
+#     property use_fsync:
+#         def __get__(self):
+#             return self.opts.use_fsync
+#         def __set__(self, value):
+#             self.opts.use_fsync = value
+
+#     property db_log_dir:
+#         def __get__(self):
+#             return string_to_path(self.opts.db_log_dir)
+#         def __set__(self, value):
+#             self.opts.db_log_dir = path_to_string(value)
+
+#     property wal_dir:
+#         def __get__(self):
+#             return string_to_path(self.opts.wal_dir)
+#         def __set__(self, value):
+#             self.opts.wal_dir = path_to_string(value)
+
+#     property delete_obsolete_files_period_micros:
+#         def __get__(self):
+#             return self.opts.delete_obsolete_files_period_micros
+#         def __set__(self, value):
+#             self.opts.delete_obsolete_files_period_micros = value
+
+#     property max_background_compactions:
+#         def __get__(self):
+#             return self.opts.max_background_compactions
+#         def __set__(self, value):
+#             self.opts.max_background_compactions = value
+
+#     property max_background_flushes:
+#         def __get__(self):
+#             return self.opts.max_background_flushes
+#         def __set__(self, value):
+#             self.opts.max_background_flushes = value
+
+#     property max_log_file_size:
+#         def __get__(self):
+#             return self.opts.max_log_file_size
+#         def __set__(self, value):
+#             self.opts.max_log_file_size = value
+
+#     property log_file_time_to_roll:
+#         def __get__(self):
+#             return self.opts.log_file_time_to_roll
+#         def __set__(self, value):
+#             self.opts.log_file_time_to_roll = value
+
+#     property keep_log_file_num:
+#         def __get__(self):
+#             return self.opts.keep_log_file_num
+#         def __set__(self, value):
+#             self.opts.keep_log_file_num = value
+
+    property soft_rate_limit:
+        def __get__(self):
+            return self.opts.soft_rate_limit
+        def __set__(self, value):
+            self.opts.soft_rate_limit = value
+
+    property hard_rate_limit:
+        def __get__(self):
+            return self.opts.hard_rate_limit
+        def __set__(self, value):
+            self.opts.hard_rate_limit = value
+
+    property rate_limit_delay_max_milliseconds:
+        def __get__(self):
+            return self.opts.rate_limit_delay_max_milliseconds
+        def __set__(self, value):
+            self.opts.rate_limit_delay_max_milliseconds = value
+
+#     property max_manifest_file_size:
+#         def __get__(self):
+#             return self.opts.max_manifest_file_size
+#         def __set__(self, value):
+#             self.opts.max_manifest_file_size = value
+
+#     property table_cache_numshardbits:
+#         def __get__(self):
+#             return self.opts.table_cache_numshardbits
+#         def __set__(self, value):
+#             self.opts.table_cache_numshardbits = value
+
+    property arena_block_size:
+        def __get__(self):
+            return self.opts.arena_block_size
+        def __set__(self, value):
+            self.opts.arena_block_size = value
+
+    property disable_auto_compactions:
+        def __get__(self):
+            return self.opts.disable_auto_compactions
+        def __set__(self, value):
+            self.opts.disable_auto_compactions = value
+
+#     property wal_ttl_seconds:
+#         def __get__(self):
+#             return self.opts.WAL_ttl_seconds
+#         def __set__(self, value):
+#             self.opts.WAL_ttl_seconds = value
+
+#     property wal_size_limit_mb:
+#         def __get__(self):
+#             return self.opts.WAL_size_limit_MB
+#         def __set__(self, value):
+#             self.opts.WAL_size_limit_MB = value
+
+#     property manifest_preallocation_size:
+#         def __get__(self):
+#             return self.opts.manifest_preallocation_size
+#         def __set__(self, value):
+#             self.opts.manifest_preallocation_size = value
+
+    property purge_redundant_kvs_while_flush:
+        def __get__(self):
+            return self.opts.purge_redundant_kvs_while_flush
+        def __set__(self, value):
+            self.opts.purge_redundant_kvs_while_flush = value
+
+#     property allow_os_buffer:
+#         def __get__(self):
+#             return self.opts.allow_os_buffer
+#         def __set__(self, value):
+#             self.opts.allow_os_buffer = value
+
+#     property allow_mmap_reads:
+#         def __get__(self):
+#             return self.opts.allow_mmap_reads
+#         def __set__(self, value):
+#             self.opts.allow_mmap_reads = value
+
+#     property allow_mmap_writes:
+#         def __get__(self):
+#             return self.opts.allow_mmap_writes
+#         def __set__(self, value):
+#             self.opts.allow_mmap_writes = value
+
+#     property is_fd_close_on_exec:
+#         def __get__(self):
+#             return self.opts.is_fd_close_on_exec
+#         def __set__(self, value):
+#             self.opts.is_fd_close_on_exec = value
+
+#     property skip_log_error_on_recovery:
+#         def __get__(self):
+#             return self.opts.skip_log_error_on_recovery
+#         def __set__(self, value):
+#             self.opts.skip_log_error_on_recovery = value
+
+#     property stats_dump_period_sec:
+#         def __get__(self):
+#             return self.opts.stats_dump_period_sec
+#         def __set__(self, value):
+#             self.opts.stats_dump_period_sec = value
+
+#     property advise_random_on_open:
+#         def __get__(self):
+#             return self.opts.advise_random_on_open
+#         def __set__(self, value):
+#             self.opts.advise_random_on_open = value
+
+#     property use_adaptive_mutex:
+#         def __get__(self):
+#             return self.opts.use_adaptive_mutex
+#         def __set__(self, value):
+#             self.opts.use_adaptive_mutex = value
+
+#     property bytes_per_sync:
+#         def __get__(self):
+#             return self.opts.bytes_per_sync
+#         def __set__(self, value):
+#             self.opts.bytes_per_sync = value
+
+    property verify_checksums_in_compaction:
+        def __get__(self):
+            return self.opts.verify_checksums_in_compaction
+        def __set__(self, value):
+            self.opts.verify_checksums_in_compaction = value
+
+    property compaction_style:
+        def __get__(self):
+            if self.opts.compaction_style == kCompactionStyleLevel:
+                return 'level'
+            if self.opts.compaction_style == kCompactionStyleUniversal:
+                return 'universal'
+            raise Exception("Unknown compaction_style")
+
+        def __set__(self, str value):
+            if value == 'level':
+                self.opts.compaction_style = kCompactionStyleLevel
+            elif value == 'universal':
+                self.opts.compaction_style = kCompactionStyleUniversal
+            else:
+                raise Exception("Unknown compaction style")
+
+    property compaction_options_universal:
+        def __get__(self):
+            cdef universal_compaction.CompactionOptionsUniversal uopts
+            cdef dict ret_ob = {}
+
+            uopts = self.opts.compaction_options_universal
+
+            ret_ob['size_ratio'] = uopts.size_ratio
+            ret_ob['min_merge_width'] = uopts.min_merge_width
+            ret_ob['max_merge_width'] = uopts.max_merge_width
+            ret_ob['max_size_amplification_percent'] = uopts.max_size_amplification_percent
+            ret_ob['compression_size_percent'] = uopts.compression_size_percent
+
+            if uopts.stop_style == kCompactionStopStyleSimilarSize:
+                ret_ob['stop_style'] = 'similar_size'
+            elif uopts.stop_style == kCompactionStopStyleTotalSize:
+                ret_ob['stop_style'] = 'total_size'
+            else:
+                raise Exception("Unknown compaction style")
+
+            return ret_ob
+
+        def __set__(self, dict value):
+            cdef universal_compaction.CompactionOptionsUniversal* uopts
+            uopts = cython.address(self.opts.compaction_options_universal)
+
+            if 'size_ratio' in value:
+                uopts.size_ratio  = value['size_ratio']
+
+            if 'min_merge_width' in value:
+                uopts.min_merge_width = value['min_merge_width']
+
+            if 'max_merge_width' in value:
+                uopts.max_merge_width = value['max_merge_width']
+
+            if 'max_size_amplification_percent' in value:
+                uopts.max_size_amplification_percent = value['max_size_amplification_percent']
+
+            if 'compression_size_percent' in value:
+                uopts.compression_size_percent = value['compression_size_percent']
+
+            if 'stop_style' in value:
+                if value['stop_style'] == 'similar_size':
+                    uopts.stop_style = kCompactionStopStyleSimilarSize
+                elif value['stop_style'] == 'total_size':
+                    uopts.stop_style = kCompactionStopStyleTotalSize
+                else:
+                    raise Exception("Unknown compaction style")
+
+    property filter_deletes:
+        def __get__(self):
+            return self.opts.filter_deletes
+        def __set__(self, value):
+            self.opts.filter_deletes = value
+
+    property max_sequential_skip_in_iterations:
+        def __get__(self):
+            return self.opts.max_sequential_skip_in_iterations
+        def __set__(self, value):
+            self.opts.max_sequential_skip_in_iterations = value
+
+    property inplace_update_support:
+        def __get__(self):
+            return self.opts.inplace_update_support
+        def __set__(self, value):
+            self.opts.inplace_update_support = value
+
+    property table_factory:
+        def __get__(self):
+            return self.py_table_factory
+
+        def __set__(self, PyTableFactory value):
+            self.py_table_factory = value
+            self.opts.table_factory = value.get_table_factory()
+
+    property memtable_factory:
+        def __get__(self):
+            return self.py_memtable_factory
+
+        def __set__(self, PyMemtableFactory value):
+            self.py_memtable_factory = value
+            self.opts.memtable_factory = value.get_memtable_factory()
+
+    property inplace_update_num_locks:
+        def __get__(self):
+            return self.opts.inplace_update_num_locks
+        def __set__(self, value):
+            self.opts.inplace_update_num_locks = value
+
+    property comparator:
+        def __get__(self):
+            return self.py_comparator.get_ob()
+
+        def __set__(self, value):
+            if isinstance(value, PyComparator):
+                if (<PyComparator?>value).get_comparator() == NULL:
+                    raise Exception("Cannot set %s as comparator" % value)
+                else:
+                    self.py_comparator = value
+            else:
+                self.py_comparator = PyGenericComparator(value)
+
+            self.opts.comparator = self.py_comparator.get_comparator()
+
+    property merge_operator:
+        def __get__(self):
+            if self.py_merge_operator is None:
+                return None
+            return self.py_merge_operator.get_ob()
+
+        def __set__(self, value):
+            self.py_merge_operator = PyMergeOperator(value)
+            self.opts.merge_operator = self.py_merge_operator.get_operator()
+
+    property prefix_extractor:
+        def __get__(self):
+            if self.py_prefix_extractor is None:
+                return None
+            return self.py_prefix_extractor.get_ob()
+
+        def __set__(self, value):
+            self.py_prefix_extractor = PySliceTransform(value)
+            self.opts.prefix_extractor = self.py_prefix_extractor.get_transformer()
+
+#     property row_cache:
+#         def __get__(self):
+#             return self.py_row_cache
+#
+#         def __set__(self, value):
+#             if value is None:
+#                 self.py_row_cache = None
+#                 self.opts.row_cache.reset()
+#             elif not isinstance(value, PyCache):
+#                 raise Exception("row_cache must be a Cache object")
+#             else:
+#                 self.py_row_cache = value
+#                 self.opts.row_cache = self.py_row_cache.get_cache()
 
 
 cdef class Options(object):
