@@ -1769,6 +1769,12 @@ cdef class Options(object):
                 self.py_row_cache = value
                 self.opts.row_cache = self.py_row_cache.get_cache()
 
+    property compaction_readahead_size:
+        def __get__(self):
+            return self.opts.compaction_readahead_size
+        def __set__(self, value):
+            self.opts.compaction_readahead_size = value
+
 
 # Forward declaration
 cdef class Snapshot
@@ -2342,7 +2348,8 @@ cdef class DB(object):
         verify_checksums=False,
         fill_cache=True,
         snapshot=None,
-        read_tier="all"):
+        read_tier="all",
+        readahead_size=0):
 
         # TODO: Is this really effiencet ?
         return locals()
@@ -2351,6 +2358,7 @@ cdef class DB(object):
         cdef options.ReadOptions opts
         opts.verify_checksums = py_opts['verify_checksums']
         opts.fill_cache = py_opts['fill_cache']
+        opts.readahead_size = py_opts.get('readahead_size', 0)
         if py_opts['snapshot'] is not None:
             opts.snapshot = (<Snapshot?>(py_opts['snapshot'])).ptr
 
