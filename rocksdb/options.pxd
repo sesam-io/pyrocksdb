@@ -107,6 +107,7 @@ cdef extern from "rocksdb/options.h" namespace "rocksdb":
         cpp_bool inplace_update_support
         size_t inplace_update_num_locks
         shared_ptr[Cache] row_cache
+        size_t compaction_readahead_size
 
     cdef cppclass WriteOptions:
         cpp_bool sync
@@ -115,6 +116,7 @@ cdef extern from "rocksdb/options.h" namespace "rocksdb":
     cdef cppclass ReadOptions:
         cpp_bool verify_checksums
         cpp_bool fill_cache
+        size_t readahead_size
         const Snapshot* snapshot
         ReadTier read_tier
 
