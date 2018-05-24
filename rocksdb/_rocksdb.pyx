@@ -887,29 +887,11 @@ cdef class ColumnFamilyOptions(object):
         def __set__(self, value):
             self.opts.max_bytes_for_level_multiplier_additional = value
 
-    property expanded_compaction_factor:
+    property max_compaction_bytes:
         def __get__(self):
-            return self.opts.expanded_compaction_factor
+            return self.opts.max_compaction_bytes
         def __set__(self, value):
-            self.opts.expanded_compaction_factor = value
-
-    property source_compaction_factor:
-        def __get__(self):
-            return self.opts.source_compaction_factor
-        def __set__(self, value):
-            self.opts.source_compaction_factor = value
-
-    property max_grandparent_overlap_factor:
-        def __get__(self):
-            return self.opts.max_grandparent_overlap_factor
-        def __set__(self, value):
-            self.opts.max_grandparent_overlap_factor = value
-
-#     property disable_data_sync:
-#         def __get__(self):
-#             return self.opts.disableDataSync
-#         def __set__(self, value):
-#             self.opts.disableDataSync = value
+            self.opts.max_compaction_bytes = value
 
 #     property use_fsync:
 #         def __get__(self):
@@ -1031,12 +1013,6 @@ cdef class ColumnFamilyOptions(object):
         def __set__(self, value):
             self.opts.purge_redundant_kvs_while_flush = value
 
-#     property allow_os_buffer:
-#         def __get__(self):
-#             return self.opts.allow_os_buffer
-#         def __set__(self, value):
-#             self.opts.allow_os_buffer = value
-
 #     property allow_mmap_reads:
 #         def __get__(self):
 #             return self.opts.allow_mmap_reads
@@ -1084,12 +1060,6 @@ cdef class ColumnFamilyOptions(object):
 #             return self.opts.bytes_per_sync
 #         def __set__(self, value):
 #             self.opts.bytes_per_sync = value
-
-    property verify_checksums_in_compaction:
-        def __get__(self):
-            return self.opts.verify_checksums_in_compaction
-        def __set__(self, value):
-            self.opts.verify_checksums_in_compaction = value
 
     property compaction_style:
         def __get__(self):
@@ -1155,12 +1125,6 @@ cdef class ColumnFamilyOptions(object):
                     uopts.stop_style = kCompactionStopStyleTotalSize
                 else:
                     raise Exception("Unknown compaction style")
-
-    property filter_deletes:
-        def __get__(self):
-            return self.opts.filter_deletes
-        def __set__(self, value):
-            self.opts.filter_deletes = value
 
     property max_sequential_skip_in_iterations:
         def __get__(self):
@@ -1413,29 +1377,11 @@ cdef class Options(object):
         def __set__(self, value):
             self.opts.max_bytes_for_level_multiplier_additional = value
 
-    property expanded_compaction_factor:
+    property max_compaction_bytes:
         def __get__(self):
-            return self.opts.expanded_compaction_factor
+            return self.opts.max_compaction_bytes
         def __set__(self, value):
-            self.opts.expanded_compaction_factor = value
-
-    property source_compaction_factor:
-        def __get__(self):
-            return self.opts.source_compaction_factor
-        def __set__(self, value):
-            self.opts.source_compaction_factor = value
-
-    property max_grandparent_overlap_factor:
-        def __get__(self):
-            return self.opts.max_grandparent_overlap_factor
-        def __set__(self, value):
-            self.opts.max_grandparent_overlap_factor = value
-
-    property disable_data_sync:
-        def __get__(self):
-            return self.opts.disableDataSync
-        def __set__(self, value):
-            self.opts.disableDataSync = value
+            self.opts.max_compaction_bytes = value
 
     property use_fsync:
         def __get__(self):
@@ -1557,12 +1503,6 @@ cdef class Options(object):
         def __set__(self, value):
             self.opts.purge_redundant_kvs_while_flush = value
 
-    property allow_os_buffer:
-        def __get__(self):
-            return self.opts.allow_os_buffer
-        def __set__(self, value):
-            self.opts.allow_os_buffer = value
-
     property allow_mmap_reads:
         def __get__(self):
             return self.opts.allow_mmap_reads
@@ -1610,12 +1550,6 @@ cdef class Options(object):
             return self.opts.bytes_per_sync
         def __set__(self, value):
             self.opts.bytes_per_sync = value
-
-    property verify_checksums_in_compaction:
-        def __get__(self):
-            return self.opts.verify_checksums_in_compaction
-        def __set__(self, value):
-            self.opts.verify_checksums_in_compaction = value
 
     property compaction_style:
         def __get__(self):
@@ -1681,12 +1615,6 @@ cdef class Options(object):
                     uopts.stop_style = kCompactionStopStyleTotalSize
                 else:
                     raise Exception("Unknown compaction style")
-
-    property filter_deletes:
-        def __get__(self):
-            return self.opts.filter_deletes
-        def __set__(self, value):
-            self.opts.filter_deletes = value
 
     property max_sequential_skip_in_iterations:
         def __get__(self):
