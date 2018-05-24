@@ -19,7 +19,8 @@ mod1 = Extension(
         '-Wall',
         '-Wextra',
         '-Wconversion',
-        '-fno-strict-aliasing'
+        '-fno-strict-aliasing',
+        '-fno-rtti'
     ],
     language='c++',
     libraries=[
