@@ -5,6 +5,7 @@ from libcpp.vector cimport vector
 from cpython cimport bool as py_bool
 from libcpp cimport bool as cpp_bool
 from libc.stdint cimport uint32_t
+from libc.stdint cimport uint64_t
 from cython.operator cimport dereference as deref
 from cpython.bytes cimport PyBytes_AsString
 from cpython.bytes cimport PyBytes_Size
@@ -24,6 +25,7 @@ cimport snapshot
 cimport db
 cimport iterator
 cimport backup
+cimport checkpoint
 cimport env
 cimport table_factory
 cimport memtablerep
@@ -2561,3 +2563,33 @@ cdef class BackupEngine(object):
             ret.append(t)
 
         return ret
+
+cdef class Checkpoint(object):
+    cdef checkpoint.Checkpoint* cpoint
+
+    def  __cinit__(self, DB db):
+        cdef Status st
+        self.cpoint = NULL
+
+        st = checkpoint.Checkpoint_Create(
+            db.db,
+            cython.address(self.cpoint))
+
+        check_status(st)
+
+    def __dealloc__(self):
+        if not self.cpoint == NULL:
+            with nogil:
+                del self.cpoint
+
+    def create_checkpoint(self, checkpoint_dir):
+        cdef Status st
+        cdef string c_checkpoint_dir
+        cdef uint64_t c_log_size_for_flush
+
+        c_checkpoint_dir = path_to_string(checkpoint_dir)
+
+        with nogil:
+            st = self.cpoint.CreateCheckpoint(
+                c_checkpoint_dir)
+        check_status(st)
