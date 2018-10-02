@@ -1473,6 +1473,12 @@ cdef class Options(object):
         def __set__(self, value):
             self.opts.max_background_flushes = value
 
+    property max_subcompactions:
+        def __get__(self):
+            return self.opts.max_subcompactions
+        def __set__(self, value):
+            self.opts.max_subcompactions = value
+
     property max_log_file_size:
         def __get__(self):
             return self.opts.max_log_file_size
