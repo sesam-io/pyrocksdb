@@ -61,6 +61,8 @@ cdef extern from "cpp/utils.hpp" namespace "py_rocks":
 # could be executed in a rocksdb background thread (eg. compaction).
 cdef extern from "Python.h":
     void PyEval_InitThreads()
+    object PyLong_FromVoidPtr(void*)
+
 PyEval_InitThreads()
 
 ## Here comes the stuff to wrap the status to exception
@@ -719,6 +721,8 @@ cdef class ColumnFamilyHandle(object):
         def __get__(self):
             return self.handle.GetID()
 
+    def get_pointer(self):
+        return PyLong_FromVoidPtr(self.handle)
 
 cdef class ColumnFamilyOptions(object):
     cdef options.ColumnFamilyOptions* opts
@@ -1898,6 +1902,9 @@ cdef class DB(object):
 
         self.opts = opts
         self.opts.in_use = True
+
+    def get_pointer(self):
+        return PyLong_FromVoidPtr(self.db)
 
     def __dealloc__(self):
         if not self.db == NULL:
