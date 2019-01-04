@@ -12,6 +12,7 @@ cdef extern from "rocksdb/table.h" namespace "rocksdb":
     ctypedef enum BlockBasedTableIndexType:
         kBinarySearch "rocksdb::BlockBasedTableOptions::IndexType::kBinarySearch"
         kHashSearch "rocksdb::BlockBasedTableOptions::IndexType::kHashSearch"
+        kTwoLevelIndexSearch "rocksdb::BlockBasedTableOptions::IndexType::kTwoLevelIndexSearch"
 
     ctypedef enum ChecksumType:
         kCRC32c

@@ -571,6 +571,8 @@ cdef class BlockBasedTableFactory(PyTableFactory):
             table_options.index_type = table_factory.kBinarySearch
         elif index_type == 'hash_search':
             table_options.index_type = table_factory.kHashSearch
+        elif index_type == 'two_level_index_search':
+            table_options.index_type = table_factory.kTwoLevelIndexSearch
         else:
             raise ValueError("Unknown index_type: %s" % index_type)
 
