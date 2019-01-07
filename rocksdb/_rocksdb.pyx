@@ -570,6 +570,7 @@ cdef class BlockBasedTableFactory(PyTableFactory):
             cache_index_and_filter_blocks_with_high_priority=None,
             pin_l0_filter_and_index_blocks_in_cache=None,
             partition_filters=None,
+            metadata_block_size=None,
             ):
 
         cdef table_factory.BlockBasedTableOptions table_options
@@ -645,6 +646,9 @@ cdef class BlockBasedTableFactory(PyTableFactory):
 
         if partition_filters is not None:
             table_options.partition_filters = partition_filters
+
+        if metadata_block_size is not None:
+            table_options.metadata_block_size = metadata_block_size
 
         self.factory.reset(table_factory.NewBlockBasedTableFactory(table_options))
 
