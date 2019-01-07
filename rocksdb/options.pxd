@@ -103,6 +103,8 @@ cdef extern from "rocksdb/options.h" namespace "rocksdb":
         size_t inplace_update_num_locks
         shared_ptr[Cache] row_cache
         size_t compaction_readahead_size
+        size_t db_write_buffer_size
+        size_t max_total_wal_size
 
     cdef cppclass WriteOptions:
         cpp_bool sync

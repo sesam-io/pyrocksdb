@@ -1733,6 +1733,21 @@ cdef class Options(object):
         def __set__(self, value):
             self.opts.compaction_readahead_size = value
 
+    property db_write_buffer_size:
+        def __get__(self):
+            return self.opts.db_write_buffer_size
+        def __set__(self, value):
+            self.opts.db_write_buffer_size = value
+
+    property max_total_wal_size:
+        def __get__(self):
+            return self.opts.max_total_wal_size
+        def __set__(self, value):
+            self.opts.max_total_wal_size = value
+
+
+
+
 
 # Forward declaration
 cdef class Snapshot
