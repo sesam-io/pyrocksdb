@@ -12,6 +12,7 @@ cdef extern from "rocksdb/filter_policy.h" namespace "rocksdb":
         const_char* Name() nogil except+
 
     cdef extern const FilterPolicy* NewBloomFilterPolicy(int) nogil except+
+    cdef extern const FilterPolicy* NewBloomFilterPolicy(int, bool) nogil except+
 
 ctypedef void (*create_filter_func)(
     void*,

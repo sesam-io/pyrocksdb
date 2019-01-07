@@ -277,8 +277,11 @@ cdef cpp_bool key_may_match_callback(
 cdef class PyBloomFilterPolicy(PyFilterPolicy):
     cdef shared_ptr[ConstFilterPolicy] policy
 
-    def __cinit__(self, int bits_per_key):
-        self.policy.reset(filter_policy.NewBloomFilterPolicy(bits_per_key))
+    def __cinit__(self, int bits_per_key, use_block_based_builder=None):
+        if use_block_based_builder is None:
+            self.policy.reset(filter_policy.NewBloomFilterPolicy(bits_per_key))
+        else:
+            self.policy.reset(filter_policy.NewBloomFilterPolicy(bits_per_key, use_block_based_builder))
 
     def name(self):
         return PyBytes_FromString(self.policy.get().Name())
@@ -563,7 +566,11 @@ cdef class BlockBasedTableFactory(PyTableFactory):
             block_size_deviation=None,
             block_restart_interval=None,
             whole_key_filtering=None,
-            cache_index_and_filter_blocks=None):
+            cache_index_and_filter_blocks=None,
+            cache_index_and_filter_blocks_with_high_priority=None,
+            pin_l0_filter_and_index_blocks_in_cache=None,
+            partition_filters=None,
+            ):
 
         cdef table_factory.BlockBasedTableOptions table_options
 
@@ -629,6 +636,15 @@ cdef class BlockBasedTableFactory(PyTableFactory):
 
         if cache_index_and_filter_blocks is not None:
             table_options.cache_index_and_filter_blocks = cache_index_and_filter_blocks
+
+        if cache_index_and_filter_blocks_with_high_priority is not None:
+            table_options.cache_index_and_filter_blocks_with_high_priority = cache_index_and_filter_blocks_with_high_priority
+
+        if pin_l0_filter_and_index_blocks_in_cache is not None:
+            table_options.pin_l0_filter_and_index_blocks_in_cache = pin_l0_filter_and_index_blocks_in_cache
+
+        if partition_filters is not None:
+            table_options.partition_filters = partition_filters
 
         self.factory.reset(table_factory.NewBlockBasedTableFactory(table_options))
 
