@@ -569,6 +569,7 @@ cdef class BlockBasedTableFactory(PyTableFactory):
             cache_index_and_filter_blocks=None,
             cache_index_and_filter_blocks_with_high_priority=None,
             pin_l0_filter_and_index_blocks_in_cache=None,
+            pin_top_level_index_and_filter=None,
             partition_filters=None,
             metadata_block_size=None,
             ):
@@ -643,6 +644,9 @@ cdef class BlockBasedTableFactory(PyTableFactory):
 
         if pin_l0_filter_and_index_blocks_in_cache is not None:
             table_options.pin_l0_filter_and_index_blocks_in_cache = pin_l0_filter_and_index_blocks_in_cache
+
+        if pin_top_level_index_and_filter is not None:
+            table_options.pin_top_level_index_and_filter = pin_top_level_index_and_filter
 
         if partition_filters is not None:
             table_options.partition_filters = partition_filters

@@ -34,6 +34,7 @@ cdef extern from "rocksdb/table.h" namespace "rocksdb":
         cpp_bool cache_index_and_filter_blocks
         cpp_bool cache_index_and_filter_blocks_with_high_priority
         cpp_bool pin_l0_filter_and_index_blocks_in_cache
+        cpp_bool pin_top_level_index_and_filter
         cpp_bool partition_filters
         size_t metadata_block_size
 
