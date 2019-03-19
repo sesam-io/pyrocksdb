@@ -1465,6 +1465,12 @@ cdef class Options(object):
         def __set__(self, value):
             self.opts.delete_obsolete_files_period_micros = value
 
+    property max_total_wal_size:
+        def __get__(self):
+            return self.opts.max_total_wal_size
+        def __set__(self, value):
+            self.opts.max_total_wal_size = value
+
     property max_background_compactions:
         def __get__(self):
             return self.opts.max_background_compactions
