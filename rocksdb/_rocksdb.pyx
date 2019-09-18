@@ -1978,6 +1978,13 @@ cdef class DB(object):
     def get_pointer(self):
         return PyLong_FromVoidPtr(self.db)
 
+    def cancel_all_background_work(self):
+        cdef db.DB* my_db = self.db
+        cdef cpp_bool wait = True;
+        if not my_db == NULL:
+            with nogil:
+                db.CancelAllBackgroundWork(my_db, wait)
+
     def __dealloc__(self):
         if not self.db == NULL:
             self.cf_handles = None

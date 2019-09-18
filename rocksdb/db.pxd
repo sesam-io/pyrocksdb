@@ -8,6 +8,13 @@ from slice_ cimport Slice
 from snapshot cimport Snapshot
 from iterator cimport Iterator
 
+
+cdef extern from "rocksdb/convenience.h" namespace "rocksdb":
+    cdef cppclass DB
+    cdef void CancelAllBackgroundWork(
+        DB* db,
+        cpp_bool wait) nogil except+
+
 cdef extern from "rocksdb/write_batch.h" namespace "rocksdb":
     cdef cppclass WriteBatch:
         WriteBatch() nogil except+
