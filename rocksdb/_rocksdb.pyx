@@ -1776,6 +1776,8 @@ cdef class WriteBatch(object):
     def __iter__(self):
         return WriteBatchIterator(self)
 
+    def get_pointer(self):
+        return PyLong_FromVoidPtr(self.batch)
 
 @cython.internal
 cdef class WriteBatchIterator(object):
