@@ -1282,6 +1282,9 @@ cdef class Options(object):
         for key, value in kwargs.items():
             setattr(self, key, value)
 
+    def IncreaseParallelism(self, total_threads):
+        self.opts.IncreaseParallelism(total_threads)
+
     property create_if_missing:
         def __get__(self):
             return self.opts.create_if_missing
