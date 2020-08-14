@@ -33,6 +33,7 @@ cdef extern from "rocksdb/options.h" namespace "rocksdb":
         kBlockCacheTier
 
     cdef cppclass Options:
+        Options* IncreaseParallelism(int total_threads)
         const Comparator* comparator
         shared_ptr[MergeOperator] merge_operator
         # TODO: compaction_filter
