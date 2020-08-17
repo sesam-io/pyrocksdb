@@ -1300,6 +1300,12 @@ cdef class Options(object):
         def __set__(self, value):
             self.opts.paranoid_checks = value
 
+    property db_write_buffer_size:
+        def __get__(self):
+            return self.opts.db_write_buffer_size
+        def __set__(self, value):
+            self.opts.db_write_buffer_size = value
+
     property write_buffer_size:
         def __get__(self):
             return self.opts.write_buffer_size
