@@ -215,37 +215,6 @@ Options object
         | *Type:* ``[int]``
         | *Default:* ``[1, 1, 1, 1, 1, 1, 1]``
 
-    .. py:attribute:: expanded_compaction_factor
-
-        Maximum number of bytes in all compacted files. We avoid expanding
-        the lower level file set of a compaction if it would make the
-        total compaction cover more than
-        (expanded_compaction_factor * targetFileSizeLevel()) many bytes.
-        
-        | *Type:* ``int``
-        | *Default:* ``25``
-
-    .. py:attribute:: source_compaction_factor
-
-        Maximum number of bytes in all source files to be compacted in a
-        single compaction run. We avoid picking too many files in the
-        source level so that we do not exceed the total source bytes
-        for compaction to exceed
-        (source_compaction_factor * targetFileSizeLevel()) many bytes.
-        If 1 pick maxfilesize amount of data as the source of
-        a compaction.
-
-        | *Type:* ``int``
-        | *Default:* ``1``
-
-    .. py:attribute:: max_grandparent_overlap_factor
-
-        Control maximum bytes of overlaps in grandparent (i.e., level+2) before we
-        stop building a single file in a level->level+1 compaction.
-
-        | *Type:* ``int``
-        | *Default:* ``10``
-
     .. py:attribute:: disable_data_sync
 
         If true, then the contents of data files are not synced
@@ -447,13 +416,6 @@ Options object
         | *Type:* ``bool``
         | *Default:* ``True``
 
-    .. py:attribute:: allow_os_buffer
-
-        Data being read from file storage may be buffered in the OS
-
-        | *Type:* ``bool``
-        | *Default:* ``True``
-
     .. py:attribute:: allow_mmap_reads
 
         Allow the OS to mmap file for reading sst tables
@@ -516,14 +478,6 @@ Options object
          
         | *Type:* ``int``
         | *Default:* ``0``
-
-    .. py:attribute:: verify_checksums_in_compaction
-
-        If ``True``, compaction will verify checksum on every read that
-        happens as part of compaction.
-
-        | *Type:* ``bool``
-        | *Default:* ``True``
 
     .. py:attribute:: compaction_style
 
@@ -603,15 +557,6 @@ Options object
             opts = rocksdb.Options()
             opts.compaction_options_universal = {'stop_style': 'similar_size'}
 
-    .. py:attribute:: filter_deletes
-
-        Use KeyMayExist API to filter deletes when this is true.
-        If KeyMayExist returns false, i.e. the key definitely does not exist, then
-        the delete is a noop. KeyMayExist only incurs in-memory look up.
-        This optimization avoids writing the delete to storage when appropriate.
-         
-        | *Type:* ``bool``
-        | *Default:* ``False``
 
     .. py:attribute:: max_sequential_skip_in_iterations
 
