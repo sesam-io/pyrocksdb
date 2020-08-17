@@ -43,6 +43,7 @@ cdef extern from "rocksdb/options.h" namespace "rocksdb":
         cpp_bool paranoid_checks
         # TODO: env
         shared_ptr[Logger] info_log
+        size_t db_write_buffer_size
         size_t write_buffer_size
         int max_write_buffer_number
         int min_write_buffer_number_to_merge
@@ -146,6 +147,7 @@ cdef extern from "rocksdb/options.h" namespace "rocksdb":
         # TODO: env
         shared_ptr[Logger] info_log
         size_t write_buffer_size
+
         int max_write_buffer_number
         int min_write_buffer_number_to_merge
         ## int max_open_files
