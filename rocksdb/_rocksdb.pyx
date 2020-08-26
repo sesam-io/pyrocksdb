@@ -563,7 +563,9 @@ cdef class BlockBasedTableFactory(PyTableFactory):
             block_size_deviation=None,
             block_restart_interval=None,
             whole_key_filtering=None,
-            cache_index_and_filter_blocks=None):
+            cache_index_and_filter_blocks=None,
+            format_version=2,  # IS-7880: default to version 2, in order to maintain backwards compatibility with rocksdb v4.1. TODO: remove this once we have run with v6 for a few weeks.
+            ):
 
         cdef table_factory.BlockBasedTableOptions table_options
 
@@ -627,6 +629,9 @@ cdef class BlockBasedTableFactory(PyTableFactory):
 
         if cache_index_and_filter_blocks is not None:
             table_options.cache_index_and_filter_blocks = cache_index_and_filter_blocks
+
+        if format_version is not None:
+            table_options.format_version = format_version
 
         self.factory.reset(table_factory.NewBlockBasedTableFactory(table_options))
 

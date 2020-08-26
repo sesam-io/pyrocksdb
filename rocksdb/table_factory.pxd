@@ -29,6 +29,7 @@ cdef extern from "rocksdb/table.h" namespace "rocksdb":
         cpp_bool whole_key_filtering
         shared_ptr[Cache] block_cache
         shared_ptr[Cache] block_cache_compressed
+        uint32_t format_version
         shared_ptr[FilterPolicy] filter_policy
         cpp_bool cache_index_and_filter_blocks
 
