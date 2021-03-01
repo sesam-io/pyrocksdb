@@ -1,7 +1,10 @@
 import cython
+from cpython cimport PyLong_AsVoidPtr
 from libcpp.string cimport string
 from libcpp.deque cimport deque
 from libcpp.vector cimport vector
+from libcpp.map cimport map as cpp_map
+from libcpp.unordered_set cimport unordered_set
 from cpython cimport bool as py_bool
 from libcpp cimport bool as cpp_bool
 from libc.stdint cimport uint32_t
@@ -30,6 +33,7 @@ cimport env
 cimport table_factory
 cimport memtablerep
 cimport universal_compaction
+cimport memory_util
 
 # Enums are the only exception for direct imports
 # Their name als already unique enough
@@ -2617,3 +2621,29 @@ cdef class Checkpoint(object):
             st = self.cpoint.CreateCheckpoint(
                 c_checkpoint_dir)
         check_status(st)
+
+
+cdef class MemoryUtil:
+    @staticmethod
+    def GetApproximateMemoryUsageByType(py_db):
+        cdef vector[db.DB*] dbs
+        cdef unordered_set[const cache.Cache*] cache_set
+        cdef cpp_map[memory_util.MemoryUtil_UsageType, uint64_t] usage_by_type
+        cdef db.DB* c_db = <db.DB*>PyLong_AsVoidPtr(py_db.get_pointer())
+        dbs.push_back(c_db)
+        memory_util.MemoryUtil.GetApproximateMemoryUsageByType(dbs, cache_set, &usage_by_type)
+        py_usage_by_type = {}
+        for item in usage_by_type:
+            type_as_int = item.first
+            value = item.second
+            if type_as_int == memory_util.MemoryUtil_UsageType.kMemTableTotal:
+                py_usage_by_type["kMemTableTotal"] = value
+            elif type_as_int == memory_util.MemoryUtil_UsageType.kMemTableUnFlushed:
+                py_usage_by_type["kMemTableUnFlushed"] = value
+            elif type_as_int == memory_util.MemoryUtil_UsageType.kTableReadersTotal:
+                py_usage_by_type["kTableReadersTotal"] = value
+            elif type_as_int == memory_util.MemoryUtil_UsageType.kCacheTotal:
+                py_usage_by_type["kCacheTotal"] = value
+            else:
+                raise AssertionError(f"Unknown usagetype: {type_as_int}")
+        return py_usage_by_type
