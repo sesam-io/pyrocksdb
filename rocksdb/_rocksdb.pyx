@@ -568,7 +568,7 @@ cdef class BlockBasedTableFactory(PyTableFactory):
             block_restart_interval=None,
             whole_key_filtering=None,
             cache_index_and_filter_blocks=None,
-            format_version=2,  # IS-7880: default to version 2, in order to maintain backwards compatibility with rocksdb v4.1. TODO: remove this once we have run with v6 for a few weeks.
+            format_version=None
             ):
 
         cdef table_factory.BlockBasedTableOptions table_options
