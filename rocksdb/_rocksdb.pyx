@@ -568,7 +568,12 @@ cdef class BlockBasedTableFactory(PyTableFactory):
             block_restart_interval=None,
             whole_key_filtering=None,
             cache_index_and_filter_blocks=None,
-            format_version=None
+            format_version=None,
+            partition_filters=None,
+            metadata_block_size=None,
+            pin_top_level_index_and_filter=None,
+            cache_index_and_filter_blocks_with_high_priority=None,
+            pin_l0_filter_and_index_blocks_in_cache=None
             ):
 
         cdef table_factory.BlockBasedTableOptions table_options
@@ -577,6 +582,8 @@ cdef class BlockBasedTableFactory(PyTableFactory):
             table_options.index_type = table_factory.kBinarySearch
         elif index_type == 'hash_search':
             table_options.index_type = table_factory.kHashSearch
+        elif index_type == 'two_level_index_search':
+            table_options.index_type = table_factory.kTwoLevelIndexSearch
         else:
             raise ValueError("Unknown index_type: %s" % index_type)
 
@@ -636,6 +643,21 @@ cdef class BlockBasedTableFactory(PyTableFactory):
 
         if format_version is not None:
             table_options.format_version = format_version
+
+        if partition_filters is not None:
+            table_options.partition_filters = partition_filters
+
+        if metadata_block_size is not None:
+            table_options.metadata_block_size = metadata_block_size
+
+        if pin_top_level_index_and_filter is not None:
+            table_options.pin_top_level_index_and_filter = pin_top_level_index_and_filter
+
+        if cache_index_and_filter_blocks_with_high_priority is not None:
+            table_options.cache_index_and_filter_blocks_with_high_priority = cache_index_and_filter_blocks_with_high_priority
+
+        if pin_l0_filter_and_index_blocks_in_cache is not None:
+            table_options.pin_l0_filter_and_index_blocks_in_cache = pin_l0_filter_and_index_blocks_in_cache
 
         self.factory.reset(table_factory.NewBlockBasedTableFactory(table_options))
 

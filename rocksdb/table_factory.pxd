@@ -1,4 +1,4 @@
-from libc.stdint cimport uint32_t
+from libc.stdint cimport uint32_t, uint64_t
 from libcpp cimport bool as cpp_bool
 from std_memory cimport shared_ptr
 
@@ -12,6 +12,7 @@ cdef extern from "rocksdb/table.h" namespace "rocksdb":
     ctypedef enum BlockBasedTableIndexType:
         kBinarySearch "rocksdb::BlockBasedTableOptions::IndexType::kBinarySearch"
         kHashSearch "rocksdb::BlockBasedTableOptions::IndexType::kHashSearch"
+        kTwoLevelIndexSearch "rocksdb::BlockBasedTableOptions::IndexType::kTwoLevelIndexSearch"
 
     ctypedef enum ChecksumType:
         kCRC32c
@@ -30,6 +31,11 @@ cdef extern from "rocksdb/table.h" namespace "rocksdb":
         shared_ptr[Cache] block_cache
         shared_ptr[Cache] block_cache_compressed
         uint32_t format_version
+        cpp_bool partition_filters
+        uint64_t metadata_block_size
+        cpp_bool pin_top_level_index_and_filter
+        cpp_bool cache_index_and_filter_blocks_with_high_priority
+        cpp_bool pin_l0_filter_and_index_blocks_in_cache
         shared_ptr[FilterPolicy] filter_policy
         cpp_bool cache_index_and_filter_blocks
 
