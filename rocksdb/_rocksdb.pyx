@@ -1795,6 +1795,14 @@ cdef class WriteBatch(object):
             cf_handle = column_family.handle
             self.batch.Delete(cf_handle, bytes_to_slice(key))
 
+    def delete_range(self, ColumnFamilyHandle column_family, begin_key, end_key):
+        cdef Status st
+        cdef db.ColumnFamilyHandle* cf_handle = column_family.handle
+        cdef Slice c_begin_key = bytes_to_slice(begin_key)
+        cdef Slice c_end_key = bytes_to_slice(end_key)
+        with nogil:
+            self.batch.DeleteRange(cf_handle, c_begin_key, c_end_key)
+
     def clear(self):
         self.batch.Clear()
 
@@ -1996,6 +2004,16 @@ cdef class DB(object):
             cf_handle = column_family.handle
             with nogil:
                 st = self.db.Delete(opts, cf_handle, c_key)
+        check_status(st)
+
+    def delete_range(self, ColumnFamilyHandle column_family, begin_key, end_key):
+        cdef Status st
+        cdef options.WriteOptions opts
+        cdef db.ColumnFamilyHandle* cf_handle = column_family.handle
+        cdef Slice c_begin_key = bytes_to_slice(begin_key)
+        cdef Slice c_end_key = bytes_to_slice(end_key)
+        with nogil:
+            st = self.db.DeleteRange(opts, cf_handle, c_begin_key, c_end_key)
         check_status(st)
 
     def merge(self, key, value, ColumnFamilyHandle column_family=None, sync=False, disable_wal=False):

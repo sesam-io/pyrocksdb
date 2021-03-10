@@ -38,6 +38,10 @@ cdef extern from "rocksdb/write_batch.h" namespace "rocksdb":
         void Delete(
             ColumnFamilyHandle*,
             const Slice&) nogil except+
+        void DeleteRange(
+            ColumnFamilyHandle*,
+            const Slice&,
+            const Slice&) nogil except+
         void PutLogData(const Slice&) nogil except+
         void Clear() nogil except+
         const string& Data() nogil except+
@@ -90,6 +94,12 @@ cdef extern from "rocksdb/db.h" namespace "rocksdb":
         Status Delete(
             const options.WriteOptions&,
             ColumnFamilyHandle*,
+            const Slice&) nogil except+
+
+        Status DeleteRange(
+            const options.WriteOptions&,
+            ColumnFamilyHandle*,
+            const Slice&,
             const Slice&) nogil except+
 
         Status Merge(
