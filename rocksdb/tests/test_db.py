@@ -22,7 +22,7 @@ class TestDB(unittest.TestCase, TestHelper):
     def setUp(self):
         opts = rocksdb.Options(create_if_missing=True)
         self._clean()
-        self.db = rocksdb.DB("/tmp/test", opts)
+        self.db = rocksdb.DB("/tmp/test", db_options=None, combined_options=opts)
 
     def tearDown(self):
         self._close_db()
@@ -30,11 +30,11 @@ class TestDB(unittest.TestCase, TestHelper):
     def test_options_used_twice(self):
         expected = "Options object is already used by another DB"
         with self.assertRaisesRegexp(Exception, expected):
-            rocksdb.DB("/tmp/test2", self.db.options)
+            rocksdb.DB("/tmp/test2", db_options=None, combined_options=self.db.options)
 
     def test_unicode_path(self):
         name = b'/tmp/M\xc3\xbcnchen'.decode('utf8')
-        rocksdb.DB(name, rocksdb.Options(create_if_missing=True))
+        rocksdb.DB(name, db_options=None, combined_options=rocksdb.Options(create_if_missing=True))
         self.addCleanup(shutil.rmtree, name)
         self.assertTrue(os.path.isdir(name))
 
@@ -236,7 +236,7 @@ class TestAssocMerge(unittest.TestCase, TestHelper):
         opts.create_if_missing = True
         opts.merge_operator = AssocCounter()
         self._clean()
-        self.db = rocksdb.DB('/tmp/test', opts)
+        self.db = rocksdb.DB('/tmp/test', db_options=None, combined_options=opts)
 
     def tearDown(self):
         self._close_db()
@@ -268,7 +268,7 @@ class TestFullMerge(unittest.TestCase, TestHelper):
         opts.create_if_missing = True
         opts.merge_operator = FullCounter()
         self._clean()
-        self.db = rocksdb.DB('/tmp/test', opts)
+        self.db = rocksdb.DB('/tmp/test', db_options=None, combined_options=opts)
 
     def tearDown(self):
         self._close_db()
@@ -300,7 +300,7 @@ class TestComparator(unittest.TestCase, TestHelper):
         opts.create_if_missing = True
         opts.comparator = SimpleComparator()
         self._clean()
-        self.db = rocksdb.DB('/tmp/test', opts)
+        self.db = rocksdb.DB('/tmp/test', db_options=None, combined_options=opts)
 
     def tearDown(self):
         self._close_db()
@@ -329,7 +329,7 @@ class TestPrefixExtractor(unittest.TestCase, TestHelper):
         opts = rocksdb.Options(create_if_missing=True)
         opts.prefix_extractor = StaticPrefix()
         self._clean()
-        self.db = rocksdb.DB('/tmp/test', opts)
+        self.db = rocksdb.DB('/tmp/test', db_options=None, combined_options=opts)
 
     def tearDown(self):
         self._close_db()
@@ -370,9 +370,9 @@ class TestPrefixExtractor(unittest.TestCase, TestHelper):
 
 class TestDBColumnFamilies(unittest.TestCase, TestHelper):
     def setUp(self):
-        opts = rocksdb.Options(create_if_missing=True)
+        opts = rocksdb.DBOptions(create_if_missing=True)
         self._clean()
-        self.db = rocksdb.DB("/tmp/test", opts, column_families=[b"default"])
+        self.db = rocksdb.DB("/tmp/test", db_options=opts, column_families=[b"default"])
         self.cf_a = self.db.create_column_family(b"A")
         self.cf_b = self.db.create_column_family(b"B")
 

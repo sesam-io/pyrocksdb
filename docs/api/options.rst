@@ -268,28 +268,12 @@ Options object
         | *Type:* ``int``
         | *Default:* ``21600000000``
 
-    .. py:attribute:: max_background_compactions
+    .. py:attribute:: max_background_jobs
 
-        Maximum number of concurrent background jobs, submitted to
-        the default LOW priority thread pool
-
-        | *Type:* ``int``
-        | *Default:* ``1``
-
-    .. py:attribute:: max_background_flushes
-
-        Maximum number of concurrent background memtable flush jobs, submitted to
-        the HIGH priority thread pool.
-        By default, all background jobs (major compaction and memtable flush) go
-        to the LOW priority pool. If this option is set to a positive number,
-        memtable flush jobs will be submitted to the HIGH priority pool.
-        It is important when the same Env is shared by multiple db instances.
-        Without a separate pool, long running major compaction jobs could
-        potentially block memtable flush jobs of other db instances, leading to
-        unnecessary Put stalls.
+        Maximum number of concurrent background jobs (compactions and flushes).
 
         | *Type:* ``int``
-        | *Default:* ``1``
+        | *Default:* ``2``
 
     .. py:attribute:: max_log_file_size
 
