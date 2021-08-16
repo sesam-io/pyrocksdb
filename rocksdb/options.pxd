@@ -68,8 +68,7 @@ cdef extern from "rocksdb/options.h" namespace "rocksdb":
         string wal_dir
         uint64_t delete_obsolete_files_period_micros
         uint64_t max_total_wal_size
-        int max_background_compactions
-        int max_background_flushes
+        int max_background_jobs
         uint32_t max_subcompactions
         size_t max_log_file_size
         size_t log_file_time_to_roll
@@ -105,6 +104,50 @@ cdef extern from "rocksdb/options.h" namespace "rocksdb":
         size_t inplace_update_num_locks
         shared_ptr[Cache] row_cache
 
+    cdef cppclass DBOptions:
+        Options* IncreaseParallelism(int total_threads)
+        # TODO: compaction_filter
+        # TODO: compaction_filter_factory
+        cpp_bool create_if_missing
+        cpp_bool error_if_exists
+        cpp_bool paranoid_checks
+        # TODO: env
+        shared_ptr[Logger] info_log
+        size_t db_write_buffer_size
+        int max_open_files
+        # TODO: compression_per_level
+        # TODO: compression_opts
+        # TODO: statistics
+        cpp_bool use_fsync
+        string db_log_dir
+        string wal_dir
+        uint64_t delete_obsolete_files_period_micros
+        uint64_t max_total_wal_size
+        int max_background_jobs
+        uint32_t max_subcompactions
+        size_t max_log_file_size
+        size_t log_file_time_to_roll
+        size_t keep_log_file_num
+        uint64_t max_manifest_file_size
+        int table_cache_numshardbits
+        size_t arena_block_size
+        # TODO: PrepareForBulkLoad()
+        uint64_t WAL_ttl_seconds
+        uint64_t WAL_size_limit_MB
+        size_t manifest_preallocation_size
+        cpp_bool allow_mmap_reads
+        cpp_bool allow_mmap_writes
+        cpp_bool is_fd_close_on_exec
+        cpp_bool skip_log_error_on_recovery
+        unsigned int stats_dump_period_sec
+        cpp_bool advise_random_on_open
+        # TODO: enum { NONE, NORMAL, SEQUENTIAL, WILLNEED } access_hint_on_compaction_start
+        cpp_bool use_adaptive_mutex
+        uint64_t bytes_per_sync
+        # TODO: table_properties_collectors
+        shared_ptr[Cache] row_cache
+
+
     cdef cppclass WriteOptions:
         cpp_bool sync
         cpp_bool disableWAL
@@ -134,16 +177,13 @@ cdef extern from "rocksdb/options.h" namespace "rocksdb":
         shared_ptr[MergeOperator] merge_operator
         # TODO: compaction_filter
         # TODO: compaction_filter_factory
-        ## cpp_bool create_if_missing
-        ## cpp_bool error_if_exists
-        ## cpp_bool paranoid_checks
-        # TODO: env
+
         shared_ptr[Logger] info_log
         size_t write_buffer_size
 
         int max_write_buffer_number
         int min_write_buffer_number_to_merge
-        ## int max_open_files
+
         CompressionType compression
         # TODO: compression_per_level
         # TODO: compression_opts
@@ -159,36 +199,14 @@ cdef extern from "rocksdb/options.h" namespace "rocksdb":
         int max_bytes_for_level_multiplier
         vector[int] max_bytes_for_level_multiplier_additional
         # TODO: statistics
-        ## cpp_bool use_fsync
-        ## string db_log_dir
-        ## string wal_dir
-        ## uint64_t delete_obsolete_files_period_micros
-        ## int max_background_compactions
-        ## int max_background_flushes
-        ## size_t max_log_file_size
-        ## size_t log_file_time_to_roll
-        ## size_t keep_log_file_num
         double soft_rate_limit
         double hard_rate_limit
         unsigned int rate_limit_delay_max_milliseconds
         ## uint64_t max_manifest_file_size
         ## int table_cache_numshardbits
         size_t arena_block_size
-        # TODO: PrepareForBulkLoad()
         cpp_bool disable_auto_compactions
-        ## uint64_t WAL_ttl_seconds
-        ## uint64_t WAL_size_limit_MB
-        ## size_t manifest_preallocation_size
         cpp_bool purge_redundant_kvs_while_flush
-        ## cpp_bool allow_mmap_reads
-        ## cpp_bool allow_mmap_writes
-        ## cpp_bool is_fd_close_on_exec
-        ## cpp_bool skip_log_error_on_recovery
-        ## unsigned int stats_dump_period_sec
-        ## cpp_bool advise_random_on_open
-        ## # TODO: enum { NONE, NORMAL, SEQUENTIAL, WILLNEED } access_hint_on_compaction_start
-        ## cpp_bool use_adaptive_mutex
-        ## uint64_t bytes_per_sync
         CompactionStyle compaction_style
         CompactionOptionsUniversal compaction_options_universal
         uint64_t max_sequential_skip_in_iterations
@@ -198,3 +216,10 @@ cdef extern from "rocksdb/options.h" namespace "rocksdb":
         cpp_bool inplace_update_support
         size_t inplace_update_num_locks
         ## shared_ptr[Cache] row_cache
+
+        cpp_bool enable_blob_files
+        uint64_t min_blob_size
+        uint64_t blob_file_size
+        CompressionType blob_compression_type
+        cpp_bool enable_blob_garbage_collection
+        double blob_garbage_collection_age_cutoff

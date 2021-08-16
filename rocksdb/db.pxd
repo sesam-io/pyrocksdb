@@ -228,7 +228,7 @@ cdef extern from "rocksdb/db.h" namespace "rocksdb":
         DB**) nogil except+
 
     cdef Status DB_Open_ColumnFamilies "rocksdb::DB::Open"(
-        const options.Options&,
+        const options.DBOptions&,
         const string&,
         const vector[ColumnFamilyDescriptor]&,
         vector[ColumnFamilyHandle*]*,
@@ -240,7 +240,7 @@ cdef extern from "rocksdb/db.h" namespace "rocksdb":
         DB**,
         cpp_bool) nogil except+
     cdef Status DB_OpenForReadOnly_ColumnFamilies "rocksdb::DB::OpenForReadOnly"(
-        const options.Options&,
+        const options.DBOptions&,
         const string&,
         const vector[ColumnFamilyDescriptor]&,
         vector[ColumnFamilyHandle*]*,
@@ -250,7 +250,7 @@ cdef extern from "rocksdb/db.h" namespace "rocksdb":
     cdef Status RepairDB(const string& dbname, const options.Options&)
 
     cdef Status ListColumnFamilies "rocksdb::DB::ListColumnFamilies" (
-        const options.Options&,
+        const options.DBOptions&,
         const string&,
         vector[string]*) nogil except+
 

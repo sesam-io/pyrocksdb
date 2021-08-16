@@ -764,13 +764,9 @@ cdef class ColumnFamilyOptions(object):
     cdef PyMemtableFactory py_memtable_factory
     cdef PyCache py_row_cache
 
-    # Used to protect sharing of Options with many DB-objects
-    cdef cpp_bool in_use
-
     def __cinit__(self):
         self.opts = NULL
         self.opts = new options.ColumnFamilyOptions()
-        self.in_use = False
 
     def __dealloc__(self):
         if not self.opts == NULL:
@@ -786,24 +782,6 @@ cdef class ColumnFamilyOptions(object):
 
         for key, value in kwargs.items():
             setattr(self, key, value)
-
-#     property create_if_missing:
-#         def __get__(self):
-#             return self.opts.create_if_missing
-#         def __set__(self, value):
-#             self.opts.create_if_missing = value
-
-#     property error_if_exists:
-#         def __get__(self):
-#             return self.opts.error_if_exists
-#         def __set__(self, value):
-#             self.opts.error_if_exists = value
-
-#     property paranoid_checks:
-#         def __get__(self):
-#             return self.opts.paranoid_checks
-#         def __set__(self, value):
-#             self.opts.paranoid_checks = value
 
     property write_buffer_size:
         def __get__(self):
@@ -823,44 +801,12 @@ cdef class ColumnFamilyOptions(object):
         def __set__(self, value):
             self.opts.min_write_buffer_number_to_merge = value
 
-#     property max_open_files:
-#         def __get__(self):
-#             return self.opts.max_open_files
-#         def __set__(self, value):
-#             self.opts.max_open_files = value
-
     property compression:
         def __get__(self):
-            if self.opts.compression == options.kNoCompression:
-                return CompressionType.no_compression
-            elif self.opts.compression  == options.kSnappyCompression:
-                return CompressionType.snappy_compression
-            elif self.opts.compression == options.kZlibCompression:
-                return CompressionType.zlib_compression
-            elif self.opts.compression == options.kBZip2Compression:
-                return CompressionType.bzip2_compression
-            elif self.opts.compression == options.kLZ4Compression:
-                return CompressionType.lz4_compression
-            elif self.opts.compression == options.kLZ4HCCompression:
-                return CompressionType.lz4hc_compression
-            else:
-                raise Exception("Unknown type: %s" % self.opts.compression)
+            return get_py_compression_type(self.opts.compression)
 
         def __set__(self, value):
-            if value == CompressionType.no_compression:
-                self.opts.compression = options.kNoCompression
-            elif value == CompressionType.snappy_compression:
-                self.opts.compression = options.kSnappyCompression
-            elif value == CompressionType.zlib_compression:
-                self.opts.compression = options.kZlibCompression
-            elif value == CompressionType.bzip2_compression:
-                self.opts.compression = options.kBZip2Compression
-            elif value == CompressionType.lz4_compression:
-                self.opts.compression = options.kLZ4Compression
-            elif value == CompressionType.lz4hc_compression:
-                self.opts.compression = options.kLZ4HCCompression
-            else:
-                raise TypeError("Unknown compression: %s" % value)
+            self.opts.compression = get_cpp_comperssion_type(value)
 
     property num_levels:
         def __get__(self):
@@ -922,61 +868,6 @@ cdef class ColumnFamilyOptions(object):
         def __set__(self, value):
             self.opts.max_bytes_for_level_multiplier_additional = value
 
-
-#     property use_fsync:
-#         def __get__(self):
-#             return self.opts.use_fsync
-#         def __set__(self, value):
-#             self.opts.use_fsync = value
-
-#     property db_log_dir:
-#         def __get__(self):
-#             return string_to_path(self.opts.db_log_dir)
-#         def __set__(self, value):
-#             self.opts.db_log_dir = path_to_string(value)
-
-#     property wal_dir:
-#         def __get__(self):
-#             return string_to_path(self.opts.wal_dir)
-#         def __set__(self, value):
-#             self.opts.wal_dir = path_to_string(value)
-
-#     property delete_obsolete_files_period_micros:
-#         def __get__(self):
-#             return self.opts.delete_obsolete_files_period_micros
-#         def __set__(self, value):
-#             self.opts.delete_obsolete_files_period_micros = value
-
-#     property max_background_compactions:
-#         def __get__(self):
-#             return self.opts.max_background_compactions
-#         def __set__(self, value):
-#             self.opts.max_background_compactions = value
-
-#     property max_background_flushes:
-#         def __get__(self):
-#             return self.opts.max_background_flushes
-#         def __set__(self, value):
-#             self.opts.max_background_flushes = value
-
-#     property max_log_file_size:
-#         def __get__(self):
-#             return self.opts.max_log_file_size
-#         def __set__(self, value):
-#             self.opts.max_log_file_size = value
-
-#     property log_file_time_to_roll:
-#         def __get__(self):
-#             return self.opts.log_file_time_to_roll
-#         def __set__(self, value):
-#             self.opts.log_file_time_to_roll = value
-
-#     property keep_log_file_num:
-#         def __get__(self):
-#             return self.opts.keep_log_file_num
-#         def __set__(self, value):
-#             self.opts.keep_log_file_num = value
-
     property soft_rate_limit:
         def __get__(self):
             return self.opts.soft_rate_limit
@@ -995,18 +886,6 @@ cdef class ColumnFamilyOptions(object):
         def __set__(self, value):
             self.opts.rate_limit_delay_max_milliseconds = value
 
-#     property max_manifest_file_size:
-#         def __get__(self):
-#             return self.opts.max_manifest_file_size
-#         def __set__(self, value):
-#             self.opts.max_manifest_file_size = value
-
-#     property table_cache_numshardbits:
-#         def __get__(self):
-#             return self.opts.table_cache_numshardbits
-#         def __set__(self, value):
-#             self.opts.table_cache_numshardbits = value
-
     property arena_block_size:
         def __get__(self):
             return self.opts.arena_block_size
@@ -1019,78 +898,11 @@ cdef class ColumnFamilyOptions(object):
         def __set__(self, value):
             self.opts.disable_auto_compactions = value
 
-#     property wal_ttl_seconds:
-#         def __get__(self):
-#             return self.opts.WAL_ttl_seconds
-#         def __set__(self, value):
-#             self.opts.WAL_ttl_seconds = value
-
-#     property wal_size_limit_mb:
-#         def __get__(self):
-#             return self.opts.WAL_size_limit_MB
-#         def __set__(self, value):
-#             self.opts.WAL_size_limit_MB = value
-
-#     property manifest_preallocation_size:
-#         def __get__(self):
-#             return self.opts.manifest_preallocation_size
-#         def __set__(self, value):
-#             self.opts.manifest_preallocation_size = value
-
     property purge_redundant_kvs_while_flush:
         def __get__(self):
             return self.opts.purge_redundant_kvs_while_flush
         def __set__(self, value):
             self.opts.purge_redundant_kvs_while_flush = value
-
-
-#     property allow_mmap_reads:
-#         def __get__(self):
-#             return self.opts.allow_mmap_reads
-#         def __set__(self, value):
-#             self.opts.allow_mmap_reads = value
-
-#     property allow_mmap_writes:
-#         def __get__(self):
-#             return self.opts.allow_mmap_writes
-#         def __set__(self, value):
-#             self.opts.allow_mmap_writes = value
-
-#     property is_fd_close_on_exec:
-#         def __get__(self):
-#             return self.opts.is_fd_close_on_exec
-#         def __set__(self, value):
-#             self.opts.is_fd_close_on_exec = value
-
-#     property skip_log_error_on_recovery:
-#         def __get__(self):
-#             return self.opts.skip_log_error_on_recovery
-#         def __set__(self, value):
-#             self.opts.skip_log_error_on_recovery = value
-
-#     property stats_dump_period_sec:
-#         def __get__(self):
-#             return self.opts.stats_dump_period_sec
-#         def __set__(self, value):
-#             self.opts.stats_dump_period_sec = value
-
-#     property advise_random_on_open:
-#         def __get__(self):
-#             return self.opts.advise_random_on_open
-#         def __set__(self, value):
-#             self.opts.advise_random_on_open = value
-
-#     property use_adaptive_mutex:
-#         def __get__(self):
-#             return self.opts.use_adaptive_mutex
-#         def __set__(self, value):
-#             self.opts.use_adaptive_mutex = value
-
-#     property bytes_per_sync:
-#         def __get__(self):
-#             return self.opts.bytes_per_sync
-#         def __set__(self, value):
-#             self.opts.bytes_per_sync = value
 
     property compaction_style:
         def __get__(self):
@@ -1240,7 +1052,338 @@ cdef class ColumnFamilyOptions(object):
 #                 self.py_row_cache = value
 #                 self.opts.row_cache = self.py_row_cache.get_cache()
 
+    property enable_blob_files:
+        def __get__(self):
+            return self.opts.enable_blob_files
+        def __set__(self, value):
+            self.opts.enable_blob_files = value
 
+    property min_blob_size:
+        def __get__(self):
+            return self.opts.min_blob_size
+        def __set__(self, value):
+            self.opts.min_blob_size = value
+
+    property blob_file_size:
+        def __get__(self):
+            return self.opts.blob_file_size
+        def __set__(self, value):
+            self.opts.blob_file_size = value
+
+    property blob_compression_type:
+        def __get__(self):
+            return get_py_compression_type(self.opts.blob_compression_type)
+
+        def __set__(self, value):
+            self.opts.blob_compression_type = get_cpp_comperssion_type(value)
+
+    property enable_blob_garbage_collection:
+        def __get__(self):
+            return self.opts.enable_blob_garbage_collection
+        def __set__(self, value):
+            self.opts.enable_blob_garbage_collection = value
+
+    property blob_garbage_collection_age_cutoff:
+        def __get__(self):
+            return self.opts.blob_garbage_collection_age_cutoff
+        def __set__(self, value):
+            self.opts.blob_garbage_collection_age_cutoff = value
+
+
+cdef class Env_Priority(object):
+    BOTTOM = "BOTTOM"
+    LOW = "LOW"
+    HIGH = "HIGH"
+    USER = "USER"
+    TOTAL = "TOTAL"
+
+cdef class Env:
+    cdef env.Env* c_env
+
+    def __cinit__(self):
+        self.c_env = NULL
+
+    def __dealloc__(self):
+        self.c_env = NULL
+
+    @staticmethod
+    def Default():
+        # Call to __new__ bypasses __init__ constructor
+        cdef Env py_env = Env.__new__(Env)
+        py_env.c_env = env.Env_Default()
+        return py_env
+
+    def SetBackgroundThreads(self, number: int, priority):
+        cdef env.Env_Priority c_priority
+        assert self.c_env != NULL
+        if priority == Env_Priority.BOTTOM:
+            c_priority = env.Env_Priority.BOTTOM
+        elif priority == Env_Priority.LOW:
+            c_priority = env.Env_Priority.LOW
+        elif priority == Env_Priority.HIGH:
+            c_priority = env.Env_Priority.HIGH
+        elif priority == Env_Priority.USER:
+            c_priority = env.Env_Priority.USER
+        elif priority == Env_Priority.TOTAL:
+            c_priority = env.Env_Priority.TOTAL
+        else:
+            raise AssertionError(f"Unknown priority '{priority}'!")
+        self.c_env.SetBackgroundThreads(number, c_priority)
+
+
+cdef class DBOptions(object):
+    cdef options.DBOptions* opts
+    cdef PyComparator py_comparator
+    cdef PyMergeOperator py_merge_operator
+    cdef PySliceTransform py_prefix_extractor
+    cdef PyTableFactory py_table_factory
+    cdef PyMemtableFactory py_memtable_factory
+    cdef PyCache py_row_cache
+
+    # Used to protect sharing of Options with many DB-objects
+    cdef cpp_bool in_use
+
+    def __cinit__(self):
+        self.opts = NULL
+        self.opts = new options.DBOptions()
+        self.in_use = False
+
+    def __dealloc__(self):
+        if not self.opts == NULL:
+            del self.opts
+
+    def __init__(self, **kwargs):
+        self.py_comparator = BytewiseComparator()
+        self.py_merge_operator = None
+        self.py_prefix_extractor = None
+        self.py_table_factory = None
+        self.py_memtable_factory = None
+        self.py_row_cache = None
+
+        for key, value in kwargs.items():
+            setattr(self, key, value)
+
+    def IncreaseParallelism(self, total_threads):
+        self.opts.IncreaseParallelism(total_threads)
+
+    property create_if_missing:
+        def __get__(self):
+            return self.opts.create_if_missing
+        def __set__(self, value):
+            self.opts.create_if_missing = value
+
+    property error_if_exists:
+        def __get__(self):
+            return self.opts.error_if_exists
+        def __set__(self, value):
+            self.opts.error_if_exists = value
+
+    property paranoid_checks:
+        def __get__(self):
+            return self.opts.paranoid_checks
+        def __set__(self, value):
+            self.opts.paranoid_checks = value
+
+    property db_write_buffer_size:
+        def __get__(self):
+            return self.opts.db_write_buffer_size
+        def __set__(self, value):
+            self.opts.db_write_buffer_size = value
+
+    property max_open_files:
+        def __get__(self):
+            return self.opts.max_open_files
+        def __set__(self, value):
+            self.opts.max_open_files = value
+
+    property use_fsync:
+        def __get__(self):
+            return self.opts.use_fsync
+        def __set__(self, value):
+            self.opts.use_fsync = value
+
+    property db_log_dir:
+        def __get__(self):
+            return string_to_path(self.opts.db_log_dir)
+        def __set__(self, value):
+            self.opts.db_log_dir = path_to_string(value)
+
+    property wal_dir:
+        def __get__(self):
+            return string_to_path(self.opts.wal_dir)
+        def __set__(self, value):
+            self.opts.wal_dir = path_to_string(value)
+
+    property delete_obsolete_files_period_micros:
+        def __get__(self):
+            return self.opts.delete_obsolete_files_period_micros
+        def __set__(self, value):
+            self.opts.delete_obsolete_files_period_micros = value
+
+    property max_total_wal_size:
+        def __get__(self):
+            return self.opts.max_total_wal_size
+        def __set__(self, value):
+            self.opts.max_total_wal_size = value
+
+    property max_background_jobs:
+        def __get__(self):
+            return self.opts.max_background_jobs
+        def __set__(self, value):
+            self.opts.max_background_jobs = value
+
+    property max_subcompactions:
+        def __get__(self):
+            return self.opts.max_subcompactions
+        def __set__(self, value):
+            self.opts.max_subcompactions = value
+
+    property max_log_file_size:
+        def __get__(self):
+            return self.opts.max_log_file_size
+        def __set__(self, value):
+            self.opts.max_log_file_size = value
+
+    property log_file_time_to_roll:
+        def __get__(self):
+            return self.opts.log_file_time_to_roll
+        def __set__(self, value):
+            self.opts.log_file_time_to_roll = value
+
+    property keep_log_file_num:
+        def __get__(self):
+            return self.opts.keep_log_file_num
+        def __set__(self, value):
+            self.opts.keep_log_file_num = value
+
+    property max_manifest_file_size:
+        def __get__(self):
+            return self.opts.max_manifest_file_size
+        def __set__(self, value):
+            self.opts.max_manifest_file_size = value
+
+    property table_cache_numshardbits:
+        def __get__(self):
+            return self.opts.table_cache_numshardbits
+        def __set__(self, value):
+            self.opts.table_cache_numshardbits = value
+
+    property wal_ttl_seconds:
+        def __get__(self):
+            return self.opts.WAL_ttl_seconds
+        def __set__(self, value):
+            self.opts.WAL_ttl_seconds = value
+
+    property wal_size_limit_mb:
+        def __get__(self):
+            return self.opts.WAL_size_limit_MB
+        def __set__(self, value):
+            self.opts.WAL_size_limit_MB = value
+
+    property manifest_preallocation_size:
+        def __get__(self):
+            return self.opts.manifest_preallocation_size
+        def __set__(self, value):
+            self.opts.manifest_preallocation_size = value
+
+    property allow_mmap_reads:
+        def __get__(self):
+            return self.opts.allow_mmap_reads
+        def __set__(self, value):
+            self.opts.allow_mmap_reads = value
+
+    property allow_mmap_writes:
+        def __get__(self):
+            return self.opts.allow_mmap_writes
+        def __set__(self, value):
+            self.opts.allow_mmap_writes = value
+
+    property is_fd_close_on_exec:
+        def __get__(self):
+            return self.opts.is_fd_close_on_exec
+        def __set__(self, value):
+            self.opts.is_fd_close_on_exec = value
+
+    property skip_log_error_on_recovery:
+        def __get__(self):
+            return self.opts.skip_log_error_on_recovery
+        def __set__(self, value):
+            self.opts.skip_log_error_on_recovery = value
+
+    property stats_dump_period_sec:
+        def __get__(self):
+            return self.opts.stats_dump_period_sec
+        def __set__(self, value):
+            self.opts.stats_dump_period_sec = value
+
+    property advise_random_on_open:
+        def __get__(self):
+            return self.opts.advise_random_on_open
+        def __set__(self, value):
+            self.opts.advise_random_on_open = value
+
+    property use_adaptive_mutex:
+        def __get__(self):
+            return self.opts.use_adaptive_mutex
+        def __set__(self, value):
+            self.opts.use_adaptive_mutex = value
+
+    property bytes_per_sync:
+        def __get__(self):
+            return self.opts.bytes_per_sync
+        def __set__(self, value):
+            self.opts.bytes_per_sync = value
+
+    property row_cache:
+        def __get__(self):
+            return self.py_row_cache
+
+        def __set__(self, value):
+            if value is None:
+                self.py_row_cache = None
+                self.opts.row_cache.reset()
+            elif not isinstance(value, PyCache):
+                raise Exception("row_cache must be a Cache object")
+            else:
+                self.py_row_cache = value
+                self.opts.row_cache = self.py_row_cache.get_cache()
+
+
+def get_py_compression_type(value: options.CompressionType):
+    if value == options.kNoCompression:
+        return CompressionType.no_compression
+    elif value  == options.kSnappyCompression:
+        return CompressionType.snappy_compression
+    elif value == options.kZlibCompression:
+        return CompressionType.zlib_compression
+    elif value == options.kBZip2Compression:
+        return CompressionType.bzip2_compression
+    elif value == options.kLZ4Compression:
+        return CompressionType.lz4_compression
+    elif value == options.kLZ4HCCompression:
+        return CompressionType.lz4hc_compression
+    else:
+        raise Exception("Unknown type: %s" % value)
+
+cdef options.CompressionType get_cpp_comperssion_type(value: str):
+    if value == CompressionType.no_compression:
+        return options.kNoCompression
+    elif value == CompressionType.snappy_compression:
+        return options.kSnappyCompression
+    elif value == CompressionType.zlib_compression:
+        return options.kZlibCompression
+    elif value == CompressionType.bzip2_compression:
+        return options.kBZip2Compression
+    elif value == CompressionType.lz4_compression:
+        return options.kLZ4Compression
+    elif value == CompressionType.lz4hc_compression:
+        return options.kLZ4HCCompression
+    else:
+        raise TypeError("Unknown compression: %s" % value)
+
+
+# TODO: The c++ Options class inherits from both DBOptions and ColoumnFamilyOptions, so ideally the cython Options
+# class should do the same instead of redeclaring everything.
 cdef class Options(object):
     cdef options.Options* opts
     cdef PyComparator py_comparator
@@ -1326,36 +1469,10 @@ cdef class Options(object):
 
     property compression:
         def __get__(self):
-            if self.opts.compression == options.kNoCompression:
-                return CompressionType.no_compression
-            elif self.opts.compression  == options.kSnappyCompression:
-                return CompressionType.snappy_compression
-            elif self.opts.compression == options.kZlibCompression:
-                return CompressionType.zlib_compression
-            elif self.opts.compression == options.kBZip2Compression:
-                return CompressionType.bzip2_compression
-            elif self.opts.compression == options.kLZ4Compression:
-                return CompressionType.lz4_compression
-            elif self.opts.compression == options.kLZ4HCCompression:
-                return CompressionType.lz4hc_compression
-            else:
-                raise Exception("Unknown type: %s" % self.opts.compression)
+            return get_py_compression_type(self.opts.compression)
 
         def __set__(self, value):
-            if value == CompressionType.no_compression:
-                self.opts.compression = options.kNoCompression
-            elif value == CompressionType.snappy_compression:
-                self.opts.compression = options.kSnappyCompression
-            elif value == CompressionType.zlib_compression:
-                self.opts.compression = options.kZlibCompression
-            elif value == CompressionType.bzip2_compression:
-                self.opts.compression = options.kBZip2Compression
-            elif value == CompressionType.lz4_compression:
-                self.opts.compression = options.kLZ4Compression
-            elif value == CompressionType.lz4hc_compression:
-                self.opts.compression = options.kLZ4HCCompression
-            else:
-                raise TypeError("Unknown compression: %s" % value)
+            self.opts.compression = get_cpp_comperssion_type(value)
 
     property num_levels:
         def __get__(self):
@@ -1447,17 +1564,11 @@ cdef class Options(object):
         def __set__(self, value):
             self.opts.max_total_wal_size = value
 
-    property max_background_compactions:
+    property max_background_jobs:
         def __get__(self):
-            return self.opts.max_background_compactions
+            return self.opts.max_background_jobs
         def __set__(self, value):
-            self.opts.max_background_compactions = value
-
-    property max_background_flushes:
-        def __get__(self):
-            return self.opts.max_background_flushes
-        def __set__(self, value):
-            self.opts.max_background_flushes = value
+            self.opts.max_background_jobs = value
 
     property max_subcompactions:
         def __get__(self):
@@ -1861,11 +1972,17 @@ cdef class WriteBatchIterator(object):
 
 @cython.no_gc_clear
 cdef class DB(object):
-    cdef Options opts
+    cdef Options combined_options
+    cdef DBOptions db_options
     cdef db.DB* db
     cdef dict cf_handles
 
-    def __cinit__(self, db_name, Options opts, column_families=None, read_only=False):
+    def __cinit__(self, db_name, DBOptions db_options, column_families=None, read_only=False,
+                  Options combined_options=None
+                  ):
+        """
+        :param combined_options: This is only specified when the database is opened without specifying any column_families.
+        """
         cdef Status st
         cdef string db_path
         cdef vector[db.ColumnFamilyDescriptor] column_family_descs
@@ -1873,29 +1990,44 @@ cdef class DB(object):
         cdef ColumnFamilyOptions column_family_options
 
         self.db = NULL
-        self.opts = None
+        self.combined_options = None
+        self.db_options = None
 
-        if opts.in_use:
+        if combined_options is not None and combined_options.in_use:
             raise Exception("Options object is already used by another DB")
+        if db_options is not None and db_options.in_use:
+            raise Exception("DBOptions object is already used by another DB")
 
         db_path = path_to_string(db_name)
 
         if column_families is None:
+            # No column_families was specified, so the combined_options parameter (which contains an 'options.Options'
+            # instance that contain both DBOptions and ColumnFamiliyOptions) should have been specified.
+            if combined_options is None:
+                raise AssertionError("Neither the 'combined_options' nor the 'column_families' parameters was specified!")
+            if db_options is not None:
+                raise AssertionError("Both the 'combined_options' and 'db_options' parameters was specified!")
             if read_only:
                 with nogil:
                     st = db.DB_OpenForReadOnly(
-                        deref(opts.opts),
+                        deref(combined_options.opts),
                         db_path,
                         cython.address(self.db),
                         False)
             else:
                 with nogil:
                     st = db.DB_Open(
-                        deref(opts.opts),
+                        deref(combined_options.opts),
                         db_path,
                         cython.address(self.db))
             check_status(st)
         else:
+            # column_families was specified, so the db_options parameter should be specified and the combined_options
+            # parameter should be None.
+            if db_options is None:
+                raise AssertionError("column_families was defined, but the db_options parameters was None!")
+            if combined_options is not None:
+                raise AssertionError("Both the 'column_families' and 'combined_options' parameters was specified!")
             if isinstance(column_families, dict):
                 for column_family_name, cf_opts in column_families.items():
                     column_family_options = cf_opts
@@ -1907,7 +2039,7 @@ cdef class DB(object):
             if read_only:
                 with nogil:
                     st = db.DB_OpenForReadOnly_ColumnFamilies(
-                        deref(opts.opts),
+                        deref(db_options.opts),
                         db_path,
                         column_family_descs,
                         cython.address(column_family_handles),
@@ -1916,7 +2048,7 @@ cdef class DB(object):
             else:
                 with nogil:
                     st = db.DB_Open_ColumnFamilies(
-                        deref(opts.opts),
+                        deref(db_options.opts),
                         db_path,
                         column_family_descs,
                         cython.address(column_family_handles),
@@ -1931,17 +2063,23 @@ cdef class DB(object):
 
         # Inject the loggers into the python callbacks
         cdef shared_ptr[logger.Logger] info_log = self.db.GetOptions().info_log
-        if opts.py_comparator is not None:
-            opts.py_comparator.set_info_log(info_log)
 
-        if opts.py_table_factory is not None:
-            opts.py_table_factory.set_info_log(info_log)
+        if combined_options is not None:
+            if combined_options.py_comparator is not None:
+                combined_options.py_comparator.set_info_log(info_log)
 
-        if opts.prefix_extractor is not None:
-            opts.py_prefix_extractor.set_info_log(info_log)
+            if combined_options.py_table_factory is not None:
+                combined_options.py_table_factory.set_info_log(info_log)
 
-        self.opts = opts
-        self.opts.in_use = True
+            if combined_options.prefix_extractor is not None:
+                combined_options.py_prefix_extractor.set_info_log(info_log)
+
+        self.combined_options = combined_options
+        if combined_options is not None:
+            self.combined_options.in_use = True
+        self.db_options = db_options
+        if db_options is not None:
+            self.db_options.in_use = True
 
     def get_pointer(self):
         return PyLong_FromVoidPtr(self.db)
@@ -1959,8 +2097,10 @@ cdef class DB(object):
             with nogil:
                 del self.db
 
-        if self.opts is not None:
-            self.opts.in_use = False
+        if self.combined_options is not None:
+            self.combined_options.in_use = False
+        if self.db_options is not None:
+            self.db_options.in_use = False
 
     property column_family_handles:
         def __get__(self):
@@ -2371,7 +2511,9 @@ cdef class DB(object):
 
     property options:
         def __get__(self):
-            return self.opts
+            if self.combined_options is None:
+                return self.db_options
+            return self.combined_options
 
 
 def repair_db(db_name, Options opts):
@@ -2383,7 +2525,7 @@ def repair_db(db_name, Options opts):
     check_status(st)
 
 
-def list_column_families(db_name, Options opts):
+def list_column_families(db_name, DBOptions opts):
     cdef Status st
     cdef string db_path
     cdef vector[string] column_families
