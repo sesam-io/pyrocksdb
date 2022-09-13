@@ -14,7 +14,7 @@ mod1 = Extension(
     'rocksdb._rocksdb',
     sources,
     extra_compile_args=[
-        '-std=c++11',
+        '-std=c++17',
         '-O3',
         '-Wall',
         '-Wextra',
