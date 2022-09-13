@@ -73,9 +73,7 @@ cdef extern from "rocksdb/options.h" namespace "rocksdb":
         size_t max_log_file_size
         size_t log_file_time_to_roll
         size_t keep_log_file_num
-        double soft_rate_limit
-        double hard_rate_limit
-        unsigned int rate_limit_delay_max_milliseconds
+
         uint64_t max_manifest_file_size
         int table_cache_numshardbits
         size_t arena_block_size
@@ -84,11 +82,9 @@ cdef extern from "rocksdb/options.h" namespace "rocksdb":
         uint64_t WAL_ttl_seconds
         uint64_t WAL_size_limit_MB
         size_t manifest_preallocation_size
-        cpp_bool purge_redundant_kvs_while_flush
         cpp_bool allow_mmap_reads
         cpp_bool allow_mmap_writes
         cpp_bool is_fd_close_on_exec
-        cpp_bool skip_log_error_on_recovery
         unsigned int stats_dump_period_sec
         cpp_bool advise_random_on_open
         # TODO: enum { NONE, NORMAL, SEQUENTIAL, WILLNEED } access_hint_on_compaction_start
@@ -138,7 +134,6 @@ cdef extern from "rocksdb/options.h" namespace "rocksdb":
         cpp_bool allow_mmap_reads
         cpp_bool allow_mmap_writes
         cpp_bool is_fd_close_on_exec
-        cpp_bool skip_log_error_on_recovery
         unsigned int stats_dump_period_sec
         cpp_bool advise_random_on_open
         # TODO: enum { NONE, NORMAL, SEQUENTIAL, WILLNEED } access_hint_on_compaction_start
@@ -199,14 +194,10 @@ cdef extern from "rocksdb/options.h" namespace "rocksdb":
         int max_bytes_for_level_multiplier
         vector[int] max_bytes_for_level_multiplier_additional
         # TODO: statistics
-        double soft_rate_limit
-        double hard_rate_limit
-        unsigned int rate_limit_delay_max_milliseconds
         ## uint64_t max_manifest_file_size
         ## int table_cache_numshardbits
         size_t arena_block_size
         cpp_bool disable_auto_compactions
-        cpp_bool purge_redundant_kvs_while_flush
         CompactionStyle compaction_style
         CompactionOptionsUniversal compaction_options_universal
         uint64_t max_sequential_skip_in_iterations

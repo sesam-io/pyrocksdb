@@ -323,13 +323,6 @@ Options object
         | *Type:* ``float``
         | *Default:* ``0``
 
-    .. py:attribute:: rate_limit_delay_max_milliseconds
-
-        Max time a put will be stalled when hard_rate_limit is enforced. If 0, then
-        there is no limit.
-
-        | *Type:* ``int``
-        | *Default:* ``1000``
 
     .. py:attribute:: max_manifest_file_size
 
@@ -393,13 +386,6 @@ Options object
         | *Type:* ``int``
         | *Default:* ``4194304``
 
-    .. py:attribute:: purge_redundant_kvs_while_flush
-
-        Purge duplicate/deleted keys when a memtable is flushed to storage.
-
-        | *Type:* ``bool``
-        | *Default:* ``True``
-
     .. py:attribute:: allow_mmap_reads
 
         Allow the OS to mmap file for reading sst tables
@@ -420,14 +406,6 @@ Options object
 
         | *Type:* ``bool``
         | *Default:* ``True``
-
-    .. py:attribute:: skip_log_error_on_recovery
-
-        Skip log corruption error on recovery
-        (If client is ok with losing most recent changes)
-         
-        | *Type:* ``bool``
-        | *Default:* ``False``
 
     .. py:attribute:: stats_dump_period_sec
 
