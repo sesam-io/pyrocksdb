@@ -832,12 +832,6 @@ cdef class ColumnFamilyOptions(object):
         def __set__(self, value):
             self.opts.level0_stop_writes_trigger = value
 
-    property max_mem_compaction_level:
-        def __get__(self):
-            return self.opts.max_mem_compaction_level
-        def __set__(self, value):
-            self.opts.max_mem_compaction_level = value
-
     property target_file_size_base:
         def __get__(self):
             return self.opts.target_file_size_base
@@ -1467,12 +1461,6 @@ cdef class Options(object):
             return self.opts.level0_stop_writes_trigger
         def __set__(self, value):
             self.opts.level0_stop_writes_trigger = value
-
-    property max_mem_compaction_level:
-        def __get__(self):
-            return self.opts.max_mem_compaction_level
-        def __set__(self, value):
-            self.opts.max_mem_compaction_level = value
 
     property target_file_size_base:
         def __get__(self):

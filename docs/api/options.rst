@@ -149,19 +149,6 @@ Options object
         | *Type:* ``int``
         | *Default:* ``24``
 
-    .. py:attribute:: max_mem_compaction_level
-
-        Maximum level to which a new compacted memtable is pushed if it
-        does not create overlap.  We try to push to level 2 to avoid the
-        relatively expensive level 0=>1 compactions and to avoid some
-        expensive manifest file operations.  We do not push all the way to
-        the largest level since that can generate a lot of wasted disk
-        space if the same key space is being repeatedly overwritten.
-
-        | *Type:* ``int``
-        | *Default:* ``2``
-
-
     .. py:attribute:: target_file_size_base
 
         | Target file size for compaction.
