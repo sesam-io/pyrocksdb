@@ -21,7 +21,6 @@ cdef extern from "rocksdb/table.h" namespace "rocksdb":
     cdef cppclass BlockBasedTableOptions:
         BlockBasedTableOptions()
         BlockBasedTableIndexType index_type
-        cpp_bool hash_index_allow_collision
         ChecksumType checksum
         cpp_bool no_block_cache
         size_t block_size

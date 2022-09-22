@@ -218,64 +218,64 @@ cdef class PyFilterPolicy(object):
     cdef set_info_log(self, shared_ptr[logger.Logger] info_log):
         pass
 
-@cython.internal
-cdef class PyGenericFilterPolicy(PyFilterPolicy):
-    cdef shared_ptr[filter_policy.FilterPolicyWrapper] policy
-    cdef object ob
+#@cython.internal
+#cdef class PyGenericFilterPolicy(PyFilterPolicy):
+#    cdef shared_ptr[filter_policy.FilterPolicyWrapper] policy
+#    cdef object ob
+#
+#    def __cinit__(self, object ob):
+#        if not isinstance(ob, IFilterPolicy):
+#            raise TypeError("%s is not of type %s" % (ob, IFilterPolicy))
+#
+#        self.ob = ob
+#        self.policy.reset(new filter_policy.FilterPolicyWrapper(
+#                bytes_to_string(ob.name()),
+#                <void*>ob,
+#                create_filter_callback,
+#                key_may_match_callback))
+#
+#    cdef object get_ob(self):
+#        return self.ob
+#
+#    cdef shared_ptr[ConstFilterPolicy] get_policy(self):
+#        return <shared_ptr[ConstFilterPolicy]>(self.policy)
+#
+#    cdef set_info_log(self, shared_ptr[logger.Logger] info_log):
+#        self.policy.get().set_info_log(info_log)
 
-    def __cinit__(self, object ob):
-        if not isinstance(ob, IFilterPolicy):
-            raise TypeError("%s is not of type %s" % (ob, IFilterPolicy))
 
-        self.ob = ob
-        self.policy.reset(new filter_policy.FilterPolicyWrapper(
-                bytes_to_string(ob.name()),
-                <void*>ob,
-                create_filter_callback,
-                key_may_match_callback))
+#cdef void create_filter_callback(
+#    void* ctx,
+#    logger.Logger* log,
+#    string& error_msg,
+#    const Slice* keys,
+#    int n,
+#    string* dst) with gil:
+#
+#    try:
+#        ret = (<object>ctx).create_filter(
+#            [slice_to_bytes(keys[i]) for i in range(n)])
+#        dst.append(bytes_to_string(ret))
+#    except BaseException as error:
+#        tb = traceback.format_exc()
+#        logger.Log(log, "Error in create filter callback: %s", <bytes>tb)
+#        error_msg.assign(<bytes>str(error))
 
-    cdef object get_ob(self):
-        return self.ob
-
-    cdef shared_ptr[ConstFilterPolicy] get_policy(self):
-        return <shared_ptr[ConstFilterPolicy]>(self.policy)
-
-    cdef set_info_log(self, shared_ptr[logger.Logger] info_log):
-        self.policy.get().set_info_log(info_log)
-
-
-cdef void create_filter_callback(
-    void* ctx,
-    logger.Logger* log,
-    string& error_msg,
-    const Slice* keys,
-    int n,
-    string* dst) with gil:
-
-    try:
-        ret = (<object>ctx).create_filter(
-            [slice_to_bytes(keys[i]) for i in range(n)])
-        dst.append(bytes_to_string(ret))
-    except BaseException as error:
-        tb = traceback.format_exc()
-        logger.Log(log, "Error in create filter callback: %s", <bytes>tb)
-        error_msg.assign(<bytes>str(error))
-
-cdef cpp_bool key_may_match_callback(
-    void* ctx,
-    logger.Logger* log,
-    string& error_msg,
-    const Slice& key,
-    const Slice& filt) with gil:
-
-    try:
-        return (<object>ctx).key_may_match(
-            slice_to_bytes(key),
-            slice_to_bytes(filt))
-    except BaseException as error:
-        tb = traceback.format_exc()
-        logger.Log(log, "Error in key_mach_match callback: %s", <bytes>tb)
-        error_msg.assign(<bytes>str(error))
+#cdef cpp_bool key_may_match_callback(
+#    void* ctx,
+#    logger.Logger* log,
+#    string& error_msg,
+#    const Slice& key,
+#    const Slice& filt) with gil:
+#
+#    try:
+#        return (<object>ctx).key_may_match(
+#            slice_to_bytes(key),
+#            slice_to_bytes(filt))
+#    except BaseException as error:
+#        tb = traceback.format_exc()
+#        logger.Log(log, "Error in key_mach_match callback: %s", <bytes>tb)
+#        error_msg.assign(<bytes>str(error))
 
 @cython.internal
 cdef class PyBloomFilterPolicy(PyFilterPolicy):
@@ -287,24 +287,24 @@ cdef class PyBloomFilterPolicy(PyFilterPolicy):
     def name(self):
         return PyBytes_FromString(self.policy.get().Name())
 
-    def create_filter(self, keys):
-        cdef string dst
-        cdef vector[Slice] c_keys
+#    def create_filter(self, keys):
+#        cdef string dst
+#        cdef vector[Slice] c_keys
+#
+#        for key in keys:
+#            c_keys.push_back(bytes_to_slice(key))
+#
+#        self.policy.get().CreateFilter(
+#            vector_data(c_keys),
+#            c_keys.size(),
+#            cython.address(dst))
+#
+#        return string_to_bytes(dst)
 
-        for key in keys:
-            c_keys.push_back(bytes_to_slice(key))
-
-        self.policy.get().CreateFilter(
-            vector_data(c_keys),
-            c_keys.size(),
-            cython.address(dst))
-
-        return string_to_bytes(dst)
-
-    def key_may_match(self, key, filter_):
-        return self.policy.get().KeyMayMatch(
-            bytes_to_slice(key),
-            bytes_to_slice(filter_))
+#    def key_may_match(self, key, filter_):
+#        return self.policy.get().KeyMayMatch(
+#            bytes_to_slice(key),
+#            bytes_to_slice(filter_))
 
     cdef object get_ob(self):
         return self
@@ -557,7 +557,6 @@ cdef class BlockBasedTableFactory(PyTableFactory):
 
     def __init__(self,
             index_type='binary_search',
-            py_bool hash_index_allow_collision=True,
             checksum='crc32',
             PyCache block_cache=None,
             PyCache block_cache_compressed=None,
@@ -586,11 +585,6 @@ cdef class BlockBasedTableFactory(PyTableFactory):
             table_options.index_type = table_factory.kTwoLevelIndexSearch
         else:
             raise ValueError("Unknown index_type: %s" % index_type)
-
-        if hash_index_allow_collision:
-            table_options.hash_index_allow_collision = True
-        else:
-            table_options.hash_index_allow_collision = False
 
         if checksum == 'crc32':
             table_options.checksum = table_factory.kCRC32c
@@ -634,7 +628,8 @@ cdef class BlockBasedTableFactory(PyTableFactory):
                     raise Exception("Cannot set filter policy: %s" % filter_policy)
                 self.py_filter_policy = filter_policy
             else:
-                self.py_filter_policy = PyGenericFilterPolicy(filter_policy)
+                raise AssertionError(f"Got an unsupported filter_policy type: {type(filter_policy)}.")
+                #self.py_filter_policy = PyGenericFilterPolicy(filter_policy)
 
             table_options.filter_policy = self.py_filter_policy.get_policy()
 

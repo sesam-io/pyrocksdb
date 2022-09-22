@@ -49,13 +49,13 @@ class FilterPolicy:
     def name(self):
         pass
 
-    @abstractmethod
-    def create_filter(self, keys):
-        pass
+#    @abstractmethod
+#    def create_filter(self, keys):
+#        pass
 
-    @abstractmethod
-    def key_may_match(self, key, filter_):
-        pass
+ #   @abstractmethod
+ #   def key_may_match(self, key, filter_):
+ #       pass
 
 class SliceTransform:
     __metaclass__ = ABCMeta

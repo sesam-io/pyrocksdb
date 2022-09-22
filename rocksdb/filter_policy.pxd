@@ -28,12 +28,12 @@ ctypedef cpp_bool (*key_may_match_func)(
     const Slice&,
     const Slice&)
 
-cdef extern from "cpp/filter_policy_wrapper.hpp" namespace "py_rocks":
-    cdef cppclass FilterPolicyWrapper:
-        FilterPolicyWrapper(
-            string,
-            void*,
-            create_filter_func,
-            key_may_match_func) nogil except+
-
-        void set_info_log(shared_ptr[Logger]) nogil except+
+#cdef extern from "cpp/filter_policy_wrapper.hpp" namespace "py_rocks":
+#    cdef cppclass FilterPolicyWrapper:
+#        FilterPolicyWrapper(
+#            string,
+#            void*,
+#            create_filter_func,
+#            key_may_match_func) nogil except+
+#
+#        void set_info_log(shared_ptr[Logger]) nogil except+
