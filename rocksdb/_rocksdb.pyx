@@ -26,6 +26,8 @@ cimport cache
 cimport logger
 cimport snapshot
 cimport db
+from db cimport DB as db_DB
+
 cimport iterator
 cimport backup
 cimport checkpoint
@@ -1898,6 +1900,7 @@ cdef class DB(object):
     cdef Options combined_options
     cdef DBOptions db_options
     cdef db.DB* db
+    cdef shared_ptr[db_DB] db_shared_ptr
     cdef dict cf_handles
 
     def __cinit__(self, db_name, DBOptions db_options, column_families=None, read_only=False,
@@ -1984,6 +1987,9 @@ cdef class DB(object):
                 cf_handle.handle = column_family_handle
                 self.cf_handles[column_family_handle.GetName()] = cf_handle
 
+        # At this point the database object has been created, so we can store it in a smart_ptr
+        self.db_shared_ptr = shared_ptr[db.DB](self.db)
+
         # Inject the loggers into the python callbacks
         cdef shared_ptr[logger.Logger] info_log = self.db.GetOptions().info_log
 
@@ -2007,6 +2013,9 @@ cdef class DB(object):
     def get_pointer(self):
         return PyLong_FromVoidPtr(self.db)
 
+    def get_shared_pointer(self):
+        return PyLong_FromVoidPtr(&self.db_shared_ptr)
+
     def cancel_all_background_work(self):
         cdef db.DB* my_db = self.db
         cdef cpp_bool wait = True;
@@ -2015,10 +2024,16 @@ cdef class DB(object):
                 db.CancelAllBackgroundWork(my_db, wait)
 
     def __dealloc__(self):
-        if not self.db == NULL:
+        cdef db.DB* my_db = self.db
+        cdef cpp_bool wait = True;
+        if my_db != NULL:
+            with nogil:
+                db.CancelAllBackgroundWork(my_db, wait)
             self.cf_handles = None
             with nogil:
-                del self.db
+                self.db = NULL
+                # Release the smart_ptr; if this is the last reference the db.DB object will be deleted.
+                self.db_shared_ptr.reset()
 
         if self.combined_options is not None:
             self.combined_options.in_use = False
