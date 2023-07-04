@@ -78,6 +78,7 @@ cdef extern from "rocksdb/db.h" namespace "rocksdb":
         Range(const Slice&, const Slice&)
 
     cdef cppclass DB:
+        Status Close() nogil except+
         Status Put(
             const options.WriteOptions&,
             const Slice&,

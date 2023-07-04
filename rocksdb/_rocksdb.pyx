@@ -2023,12 +2023,19 @@ cdef class DB(object):
             with nogil:
                 db.CancelAllBackgroundWork(my_db, wait)
 
+    def close(self):
+        cdef db.DB* my_db = self.db
+        cdef cpp_bool wait = True
+        cdef Status st
+        if not my_db == NULL:
+            with nogil:
+                close_status = my_db.Close()
+            check_status(st)
+
     def __dealloc__(self):
         cdef db.DB* my_db = self.db
         cdef cpp_bool wait = True;
         if my_db != NULL:
-            with nogil:
-                db.CancelAllBackgroundWork(my_db, wait)
             self.cf_handles = None
             with nogil:
                 self.db = NULL
