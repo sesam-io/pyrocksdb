@@ -56,6 +56,7 @@ from interfaces import Comparator as IComparator
 from interfaces import SliceTransform as ISliceTransform
 import traceback
 import errors
+import struct
 
 ctypedef const filter_policy.FilterPolicy ConstFilterPolicy
 
@@ -740,6 +741,29 @@ cdef class CompressionType(object):
 
 cdef class ColumnFamilyHandle(object):
     cdef db.ColumnFamilyHandle* handle
+    cdef uint32_t shared_column_family_prefix
+    cdef bytes shared_column_family_prefix_bytes
+    cdef Slice shared_column_family_prefix_slice
+    cdef bytes shared_column_family_prefix_iterate_upper_bound_bytes
+    cdef Slice shared_column_family_prefix_iterate_upper_bound_slice
+
+    def __init__(self, shared_column_family_prefix=0):
+        """
+        :param shared_column_family_prefix:
+            If this object represents a normal columnfamily this value is 0.
+            If this is > 0 it means that this object represents a set of prefixed items in a shared columnfamily.
+        """
+        self.shared_column_family_prefix = shared_column_family_prefix
+        if shared_column_family_prefix > 0:
+            if type(shared_column_family_prefix) is not int:
+                raise TypeError(f"Invalid shared_column_family_prefix type: {type(shared_column_family_prefix)}")
+            if shared_column_family_prefix > (2**32 - 2): # we subract 2 instead of one since we need to make sure the shared_column_family_prefix_iterate_upper_bound can be larger than shared_column_family_prefix
+                raise TypeError(f"The shared_column_family_prefix value is too large and won't fit in an uint32: {shared_column_family_prefix}")
+
+            self.shared_column_family_prefix_bytes = struct.pack("<I", shared_column_family_prefix)
+            self.shared_column_family_prefix_iterate_upper_bound_bytes = struct.pack("<I", shared_column_family_prefix + 1)
+            self.shared_column_family_prefix_slice = bytes_to_slice(self.shared_column_family_prefix)
+            self.shared_column_family_prefix_iterate_upper_bound_slice = bytes_to_slice(self.shared_column_family_prefix_iterate_upper_bound)
 
     property name:
         def __get__(self):
@@ -748,6 +772,10 @@ cdef class ColumnFamilyHandle(object):
     property id:
         def __get__(self):
             return self.handle.GetID()
+
+    property shared_column_family_prefix:
+        def __get__(self):
+            return self.shared_column_family_prefix
 
     def get_pointer(self):
         return PyLong_FromVoidPtr(self.handle)
@@ -1813,6 +1841,8 @@ cdef class WriteBatch(object):
             self.batch.Put(bytes_to_slice(key), bytes_to_slice(value))
         else:
             cf_handle = column_family.handle
+            if column_family.shared_column_family_prefix:
+                key = column_family.shared_column_family_prefix_bytes + key
             self.batch.Put(cf_handle, bytes_to_slice(key), bytes_to_slice(value))
 
     def delete(self, key, ColumnFamilyHandle column_family=None):
@@ -1821,11 +1851,16 @@ cdef class WriteBatch(object):
             self.batch.Delete(bytes_to_slice(key))
         else:
             cf_handle = column_family.handle
+            if column_family.shared_column_family_prefix:
+                key = column_family.shared_column_family_prefix_bytes + key
             self.batch.Delete(cf_handle, bytes_to_slice(key))
 
     def delete_range(self, ColumnFamilyHandle column_family, begin_key, end_key):
         cdef Status st
         cdef db.ColumnFamilyHandle* cf_handle = column_family.handle
+        if column_family.shared_column_family_prefix:
+            begin_key = column_family.shared_column_family_prefix_bytes + begin_key
+            end_key = column_family.shared_column_family_prefix_bytes + end_key
         cdef Slice c_begin_key = bytes_to_slice(begin_key)
         cdef Slice c_end_key = bytes_to_slice(end_key)
         with nogil:
@@ -2044,14 +2079,18 @@ cdef class DB(object):
         opts.sync = sync
         opts.disableWAL = disable_wal
 
-        cdef Slice c_key = bytes_to_slice(key)
+        cdef Slice c_key
         cdef Slice c_value = bytes_to_slice(value)
 
         if column_family is None:
+            c_key = bytes_to_slice(key)
             with nogil:
                 st = self.db.Put(opts, c_key, c_value)
         else:
             cf_handle = column_family.handle
+            if column_family.shared_column_family_prefix:
+                key = column_family.shared_column_family_prefix_bytes + key
+            c_key = bytes_to_slice(key)
             with nogil:
                 st = self.db.Put(opts, cf_handle, c_key, c_value)
         check_status(st)
@@ -2063,13 +2102,17 @@ cdef class DB(object):
         opts.sync = sync
         opts.disableWAL = disable_wal
 
-        cdef Slice c_key = bytes_to_slice(key)
+        cdef Slice c_key
 
         if column_family is None:
+            c_key = bytes_to_slice(key)
             with nogil:
                 st = self.db.Delete(opts, c_key)
         else:
             cf_handle = column_family.handle
+            if column_family.shared_column_family_prefix:
+                key = column_family.shared_column_family_prefix_bytes + key
+            c_key = bytes_to_slice(key)
             with nogil:
                 st = self.db.Delete(opts, cf_handle, c_key)
         check_status(st)
@@ -2078,6 +2121,11 @@ cdef class DB(object):
         cdef Status st
         cdef options.WriteOptions opts
         cdef db.ColumnFamilyHandle* cf_handle = column_family.handle
+
+        if column_family.shared_column_family_prefix:
+            begin_key = column_family.shared_column_family_prefix_bytes + begin_key
+            end_key = column_family.shared_column_family_prefix_bytes + end_key
+
         cdef Slice c_begin_key = bytes_to_slice(begin_key)
         cdef Slice c_end_key = bytes_to_slice(end_key)
         with nogil:
@@ -2101,13 +2149,17 @@ cdef class DB(object):
         cdef db.ColumnFamilyHandle* cf_handle
 
         opts = self.build_read_opts(self.__parse_read_opts(*args, **kwargs))
-        cdef Slice c_key = bytes_to_slice(key)
+        cdef Slice c_key
 
         if column_family is None:
+            c_key = bytes_to_slice(key)
             with nogil:
                 st = self.db.Get(opts, c_key, cython.address(res))
         else:
             cf_handle = column_family.handle
+            if column_family.shared_column_family_prefix:
+                key = column_family.shared_column_family_prefix_bytes + key
+            c_key = bytes_to_slice(key)
             with nogil:
                 st = self.db.Get(opts, cf_handle, c_key, cython.address(res))
 
@@ -2124,13 +2176,16 @@ cdef class DB(object):
         cdef KeysIterator it
 
         opts = self.build_read_opts(self.__parse_read_opts(*args, **kwargs))
-        it = KeysIterator(self)
+        it = KeysIterator(self, column_family)
 
         if column_family is None:
             with nogil:
                 it.ptr = self.db.NewIterator(opts)
         else:
             cf_handle = column_family.handle
+            if column_family.shared_column_family_prefix:
+                opts.iterate_lower_bound = &column_family.shared_column_family_prefix_slice
+                opts.iterate_upper_bound = &column_family.shared_column_family_prefix_iterate_upper_bound_slice
             with nogil:
                 it.ptr = self.db.NewIterator(opts, cf_handle)
 
@@ -2143,13 +2198,16 @@ cdef class DB(object):
 
         opts = self.build_read_opts(self.__parse_read_opts(*args, **kwargs))
 
-        it = ValuesIterator(self)
+        it = ValuesIterator(self, column_family)
 
         if column_family is None:
             with nogil:
                 it.ptr = self.db.NewIterator(opts)
         else:
             cf_handle = column_family.handle
+            if column_family.shared_column_family_prefix:
+                opts.iterate_lower_bound = &column_family.shared_column_family_prefix_slice
+                opts.iterate_upper_bound = &column_family.shared_column_family_prefix_iterate_upper_bound_slice
             with nogil:
                 it.ptr = self.db.NewIterator(opts, cf_handle)
 
@@ -2162,13 +2220,16 @@ cdef class DB(object):
 
         opts = self.build_read_opts(self.__parse_read_opts(*args, **kwargs))
 
-        it = ItemsIterator(self)
+        it = ItemsIterator(self, column_family)
 
         if column_family is None:
             with nogil:
                 it.ptr = self.db.NewIterator(opts)
         else:
             cf_handle = column_family.handle
+            if column_family.shared_column_family_prefix:
+                opts.iterate_lower_bound = &column_family.shared_column_family_prefix_slice
+                opts.iterate_upper_bound = &column_family.shared_column_family_prefix_iterate_upper_bound_slice
             with nogil:
                 it.ptr = self.db.NewIterator(opts, cf_handle)
 
@@ -2298,7 +2359,9 @@ cdef class DB(object):
         fill_cache=True,
         snapshot=None,
         read_tier="all"):
-
+        # NOTE: Never add the "iterate_lower_bound" or "iterate_upper_bound" properties to this method! Those properties
+        #       are used internally to handle shared_column_family_prefix values and should be be settable from the
+        #       python code.
         # TODO: Is this really effiencet ?
         return locals()
 
@@ -2371,10 +2434,19 @@ cdef class Snapshot(object):
 cdef class BaseIterator(object):
     cdef iterator.Iterator* ptr
     cdef DB db
+    cdef ColumnFamilyHandle column_family
+    cdef uint32_t shared_column_family_prefix
+    cdef bytes shared_column_family_prefix_bytes
 
-    def __cinit__(self, DB db):
+    def __cinit__(self, DB db, ColumnFamilyHandle column_family):
         self.db = db
         self.ptr = NULL
+        self.column_family = column_family
+        if column_family is not None:
+            self.shared_column_family_prefix = column_family.shared_column_family_prefix
+            self.shared_column_family_prefix_bytes = column_family.shared_column_family_prefix_bytes
+        else:
+            self.shared_column_family_prefix = 0
 
     def __dealloc__(self):
         if not self.ptr == NULL:
@@ -2407,6 +2479,8 @@ cdef class BaseIterator(object):
         check_status(self.ptr.status())
 
     cpdef seek(self, key):
+        if self.shared_column_family_prefix:
+            key = self.shared_column_family_prefix_bytes + key
         cdef Slice c_key = bytes_to_slice(key)
         with nogil:
             self.ptr.Seek(c_key)
@@ -2422,7 +2496,10 @@ cdef class KeysIterator(BaseIterator):
         with nogil:
             c_key = self.ptr.key()
         check_status(self.ptr.status())
-        return slice_to_bytes(c_key)
+        key = slice_to_bytes(c_key)
+        if self.shared_column_family_prefix:
+            key = key[len(self.shared_column_family_prefix_bytes):]
+        return key
 
 @cython.internal
 cdef class ValuesIterator(BaseIterator):
@@ -2442,7 +2519,10 @@ cdef class ItemsIterator(BaseIterator):
             c_key = self.ptr.key()
             c_value = self.ptr.value()
         check_status(self.ptr.status())
-        return (slice_to_bytes(c_key), slice_to_bytes(c_value))
+        key = slice_to_bytes(c_key)
+        if self.shared_column_family_prefix:
+            key = key[len(self.shared_column_family_prefix_bytes):]
+        return (key, slice_to_bytes(c_value))
 
 @cython.internal
 cdef class ReversedIterator(object):
