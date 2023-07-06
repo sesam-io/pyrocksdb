@@ -1815,14 +1815,6 @@ cdef class WriteBatch(object):
             cf_handle = column_family.handle
             self.batch.Put(cf_handle, bytes_to_slice(key), bytes_to_slice(value))
 
-    def merge(self, key, value, ColumnFamilyHandle column_family=None):
-        cdef db.ColumnFamilyHandle* cf_handle
-        if column_family is None:
-            self.batch.Merge(bytes_to_slice(key), bytes_to_slice(value))
-        else:
-            cf_handle = column_family.handle
-            self.batch.Merge(cf_handle, bytes_to_slice(key), bytes_to_slice(value))
-
     def delete(self, key, ColumnFamilyHandle column_family=None):
         cdef db.ColumnFamilyHandle* cf_handle
         if column_family is None:
@@ -2092,26 +2084,6 @@ cdef class DB(object):
             st = self.db.DeleteRange(opts, cf_handle, c_begin_key, c_end_key)
         check_status(st)
 
-    def merge(self, key, value, ColumnFamilyHandle column_family=None, sync=False, disable_wal=False):
-        cdef Status st
-        cdef options.WriteOptions opts
-        cdef db.ColumnFamilyHandle* cf_handle
-        opts.sync = sync
-        opts.disableWAL = disable_wal
-
-        cdef Slice c_key = bytes_to_slice(key)
-        cdef Slice c_value = bytes_to_slice(value)
-
-        if column_family is None:
-            with nogil:
-                st = self.db.Merge(opts, c_key, c_value)
-        else:
-            cf_handle = column_family.handle
-            with nogil:
-                st = self.db.Merge(opts, cf_handle, c_key, c_value)
-
-        check_status(st)
-
     def write(self, WriteBatch batch, sync=False, disable_wal=False):
         cdef Status st
         cdef options.WriteOptions opts
@@ -2145,105 +2117,6 @@ cdef class DB(object):
             return None
         else:
             check_status(st)
-
-    def multi_get(self, keys, column_families=None, *args, **kwargs):
-        cdef vector[string] values
-        values.resize(len(keys))
-
-        cdef vector[Slice] c_keys
-        for key in keys:
-            c_keys.push_back(bytes_to_slice(key))
-
-        cdef options.ReadOptions opts
-        opts = self.build_read_opts(self.__parse_read_opts(*args, **kwargs))
-
-        cdef vector[db.ColumnFamilyHandle*] cf_handles
-        cdef db.ColumnFamilyHandle* cf_handle
-        cdef ColumnFamilyHandle column_family
-
-        cdef vector[Status] res
-        if column_families is None:
-            with nogil:
-                res = self.db.MultiGet(
-                    opts,
-                    c_keys,
-                    cython.address(values))
-        else:
-            for column_family in column_families:
-                cf_handle = column_family.handle
-                cf_handles.push_back(cf_handle)
-            with nogil:
-                res = self.db.MultiGet(
-                    opts,
-                    cf_handles,
-                    c_keys,
-                    cython.address(values))
-
-        cdef dict ret_dict = {}
-        for index in range(len(keys)):
-            if res[index].ok():
-                ret_dict[keys[index]] = string_to_bytes(values[index])
-            elif res[index].IsNotFound():
-                ret_dict[keys[index]] = None
-            else:
-                check_status(res[index])
-
-        return ret_dict
-
-    def key_may_exist(self, key, ColumnFamilyHandle column_family=None, fetch=False, *args, **kwargs):
-        cdef string value
-        cdef cpp_bool value_found
-        cdef cpp_bool exists
-        cdef options.ReadOptions opts
-        cdef Slice c_key
-        opts = self.build_read_opts(self.__parse_read_opts(*args, **kwargs))
-
-        c_key = bytes_to_slice(key)
-        exists = False
-
-        if fetch:
-            value_found = False
-            if column_family is None:
-                with nogil:
-                    exists = self.db.KeyMayExist(
-                        opts,
-                        c_key,
-                        cython.address(value),
-                        cython.address(value_found))
-            else:
-                cf_handle = column_family.handle
-                with nogil:
-                    exists = self.db.KeyMayExist(
-                        opts,
-                        cf_handle,
-                        c_key,
-                        cython.address(value),
-                        cython.address(value_found))
-
-            if exists:
-                if value_found:
-                    return (True, string_to_bytes(value))
-                else:
-                    return (True, None)
-            else:
-                return (False, None)
-        else:
-            if column_family is None:
-                with nogil:
-                    exists = self.db.KeyMayExist(
-                        opts,
-                        c_key,
-                        cython.address(value))
-            else:
-                cf_handle = column_family.handle
-                with nogil:
-                    exists = self.db.KeyMayExist(
-                        opts,
-                        cf_handle,
-                        c_key,
-                        cython.address(value))
-
-            return (exists, None)
 
     def iterkeys(self, ColumnFamilyHandle column_family=None, *args, **kwargs):
         cdef options.ReadOptions opts
