@@ -3,6 +3,8 @@ from cpython cimport PyLong_AsVoidPtr
 from libcpp.string cimport string
 from libcpp.deque cimport deque
 from libcpp.vector cimport vector
+from libcpp cimport bool as cpp_bool
+
 from libcpp.map cimport map as cpp_map
 from libcpp.unordered_set cimport unordered_set
 from cpython cimport bool as py_bool
@@ -742,6 +744,7 @@ cdef class CompressionType(object):
 cdef class ColumnFamilyHandle(object):
     cdef db.ColumnFamilyHandle* handle
     cdef uint32_t shared_column_family_prefix
+    cdef cpp_bool _has_been_closed
     cdef bytes shared_column_family_prefix_bytes
     cdef Slice shared_column_family_prefix_slice
     cdef bytes shared_column_family_prefix_iterate_upper_bound_bytes
@@ -753,6 +756,7 @@ cdef class ColumnFamilyHandle(object):
             If this object represents a normal columnfamily this value is 0.
             If this is > 0 it means that this object represents a set of prefixed items in a shared columnfamily.
         """
+        self._has_been_closed = False
         self.shared_column_family_prefix = shared_column_family_prefix
         if shared_column_family_prefix > 0:
             if type(shared_column_family_prefix) is not int:
@@ -771,18 +775,33 @@ cdef class ColumnFamilyHandle(object):
 
     property name:
         def __get__(self):
+            if self._has_been_closed:
+                raise AssertionError("This ColumnFamilyHandle has been closed and should not have been used!")
             return self.handle.GetName()
 
     property id:
         def __get__(self):
+            if self._has_been_closed:
+                raise AssertionError("This ColumnFamilyHandle has been closed and should not have been used!")
             return self.handle.GetID()
 
     property shared_column_family_prefix:
         def __get__(self):
+            if self._has_been_closed:
+                raise AssertionError("This ColumnFamilyHandle has been closed and should not have been used!")
             return self.shared_column_family_prefix
 
     def get_pointer(self):
+        if self._has_been_closed:
+            raise AssertionError("This ColumnFamilyHandle has been closed and should not have been used!")
         return PyLong_FromVoidPtr(self.handle)
+
+    def close(self):
+        if self._has_been_closed:
+            raise AssertionError("This ColumnFamilyHandle has already been closed!")
+        self._has_been_closed = True
+        self.handle = NULL
+
 
 cdef class ColumnFamilyOptions(object):
     cdef options.ColumnFamilyOptions* opts
