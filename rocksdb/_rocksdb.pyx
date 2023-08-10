@@ -2060,6 +2060,11 @@ cdef class DB(object):
         if db_options is not None:
             self.db_options.in_use = True
 
+    def close(self):
+        cdef Status status
+        status = self.db.Close()
+        check_status(status)
+
     def get_pointer(self):
         return PyLong_FromVoidPtr(self.db)
 
