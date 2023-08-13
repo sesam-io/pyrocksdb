@@ -2465,6 +2465,8 @@ cdef class BaseIterator(object):
     cdef ColumnFamilyHandle column_family
     cdef uint32_t shared_column_family_prefix
     cdef bytes shared_column_family_prefix_bytes
+    cdef Slice shared_column_family_prefix_slice
+    cdef Slice shared_column_family_prefix_iterate_upper_bound_slice
 
     def __cinit__(self, DB db, ColumnFamilyHandle column_family):
         self.db = db
@@ -2473,6 +2475,8 @@ cdef class BaseIterator(object):
         if column_family is not None:
             self.shared_column_family_prefix = column_family.shared_column_family_prefix
             self.shared_column_family_prefix_bytes = column_family.shared_column_family_prefix_bytes
+            self.shared_column_family_prefix_slice = column_family.shared_column_family_prefix_slice
+            self.shared_column_family_prefix_iterate_upper_bound_slice = column_family.shared_column_family_prefix_iterate_upper_bound_slice
         else:
             self.shared_column_family_prefix = 0
 
@@ -2484,7 +2488,7 @@ cdef class BaseIterator(object):
         return self
 
     def __next__(self):
-        if not self.ptr.Valid():
+        if not self.Valid():
             raise StopIteration()
 
         cdef object ret = self.get_ob()
@@ -2496,14 +2500,40 @@ cdef class BaseIterator(object):
     def __reversed__(self):
         return ReversedIterator(self)
 
+    cpdef Valid(self):
+        cdef Slice c_key
+        if not self.ptr.Valid():
+            return False
+        if self.shared_column_family_prefix:
+            with nogil:
+                c_key = self.ptr.key()
+            if not c_key.starts_with(self.shared_column_family_prefix_slice):
+                # the iterator points outside the specified part of the shared columnfamily, so it is invalid
+                return False
+        return True
+
     cpdef seek_to_first(self):
-        with nogil:
-            self.ptr.SeekToFirst()
+        if self.shared_column_family_prefix:
+            with nogil:
+                self.ptr.Seek(self.shared_column_family_prefix_slice)
+        else:
+            with nogil:
+                self.ptr.SeekToFirst()
         check_status(self.ptr.status())
 
     cpdef seek_to_last(self):
-        with nogil:
-            self.ptr.SeekToLast()
+        cdef Slice c_key
+        if self.shared_column_family_prefix:
+            with nogil:
+                self.ptr.Seek(self.shared_column_family_prefix_iterate_upper_bound_slice)
+                if self.ptr.Valid():
+                    c_key = self.ptr.key()
+                    if c_key.starts_with(self.shared_column_family_prefix_iterate_upper_bound_slice):
+                        # We found an entity in the next sub-columnfamily, so try to take one step backwards
+                        self.ptr.Prev()
+        else:
+            with nogil:
+                self.ptr.SeekToLast()
         check_status(self.ptr.status())
 
     cpdef seek(self, key):
@@ -2575,7 +2605,7 @@ cdef class ReversedIterator(object):
         return self.it
 
     def __next__(self):
-        if not self.it.ptr.Valid():
+        if not self.it.Valid():
             raise StopIteration()
 
         cdef object ret = self.it.get_ob()
