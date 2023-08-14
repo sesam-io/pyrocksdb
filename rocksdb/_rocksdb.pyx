@@ -2525,7 +2525,7 @@ cdef class BaseIterator(object):
         cdef Slice c_key
         if self.shared_column_family_prefix:
             with nogil:
-                self.ptr.Seek(self.shared_column_family_prefix_iterate_upper_bound_slice)
+                self.ptr.SeekForPrev(self.shared_column_family_prefix_iterate_upper_bound_slice)
                 if self.ptr.Valid():
                     c_key = self.ptr.key()
                     if c_key.starts_with(self.shared_column_family_prefix_iterate_upper_bound_slice):
