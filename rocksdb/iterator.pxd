@@ -8,6 +8,7 @@ cdef extern from "rocksdb/iterator.h" namespace "rocksdb":
         void SeekToFirst() nogil except+
         void SeekToLast() nogil except+
         void Seek(const Slice&) nogil except+
+        void SeekForPrev(const Slice&) nogil except+
         void Next() nogil except+
         void Prev() nogil except+
         Slice key() nogil except+

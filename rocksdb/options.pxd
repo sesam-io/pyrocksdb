@@ -150,6 +150,8 @@ cdef extern from "rocksdb/options.h" namespace "rocksdb":
         cpp_bool verify_checksums
         cpp_bool fill_cache
         const Snapshot* snapshot
+        const Slice* iterate_lower_bound
+        const Slice* iterate_upper_bound
         ReadTier read_tier
 
     cdef cppclass FlushOptions:
