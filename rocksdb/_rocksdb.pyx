@@ -768,8 +768,8 @@ cdef class ColumnFamilyHandle(object):
                 raise TypeError(f"Invalid shared_column_family_handle_pointer type: {type(shared_column_family_handle_pointer)}")
             self.handle = <db.ColumnFamilyHandle*>PyLong_AsVoidPtr(shared_column_family_handle_pointer)
 
-            self.shared_column_family_prefix_bytes = struct.pack("<I", shared_column_family_prefix)
-            self.shared_column_family_prefix_iterate_upper_bound_bytes = struct.pack("<I", shared_column_family_prefix + 1)
+            self.shared_column_family_prefix_bytes = struct.pack(">I", shared_column_family_prefix)
+            self.shared_column_family_prefix_iterate_upper_bound_bytes = struct.pack(">I", shared_column_family_prefix + 1)
             self.shared_column_family_prefix_slice = bytes_to_slice(self.shared_column_family_prefix_bytes)
             self.shared_column_family_prefix_iterate_upper_bound_slice = bytes_to_slice(self.shared_column_family_prefix_iterate_upper_bound_bytes)
 
