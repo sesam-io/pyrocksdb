@@ -2467,7 +2467,7 @@ cdef class Snapshot(object):
 def set_default_snapshot(py_snapshot):
     cdef const snapshot.Snapshot* c_snapshot = NULL
     if py_snapshot is not None:
-       c_snapshot = (<snapshot.Snapshot?>(py_snapshot)).ptr
+       c_snapshot = (<Snapshot?>(py_snapshot)).ptr
     snapshot.DefaultThreadLocalSnapshot.set_default_snapshot(c_snapshot)
 
 
