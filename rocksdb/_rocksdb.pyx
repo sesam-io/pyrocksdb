@@ -2399,6 +2399,9 @@ cdef class DB(object):
         opts.fill_cache = py_opts['fill_cache']
         if py_opts['snapshot'] is not None:
             opts.snapshot = (<Snapshot?>(py_opts['snapshot'])).ptr
+        else:
+            # use the threadlocal default snapshot, if any has been specified
+            opts.snapshot = snapshot.DefaultThreadLocalSnapshot.get_default_snapshot()
 
         if py_opts['read_tier'] == "all":
             opts.read_tier = options.kReadAllTier
@@ -2456,6 +2459,16 @@ cdef class Snapshot(object):
         if not self.ptr == NULL:
             with nogil:
                 self.db.db.ReleaseSnapshot(self.ptr)
+
+    def get_pointer(self):
+        return PyLong_FromVoidPtr(<void*>self.ptr)
+
+
+def set_default_snapshot(py_snapshot):
+    cdef const snapshot.Snapshot* c_snapshot = NULL
+    if py_snapshot is not None:
+       c_snapshot = (<snapshot.Snapshot?>(py_snapshot)).ptr
+    snapshot.DefaultThreadLocalSnapshot.set_default_snapshot(c_snapshot)
 
 
 @cython.internal
