@@ -32,7 +32,7 @@ mod1 = Extension(
 
 setup(
     name="pyrocksdb",
-    version='0.6',
+    version='0.7',
     description="Python bindings for RocksDB",
     keywords='rocksdb',
     author='Stephan Hofmockel',
