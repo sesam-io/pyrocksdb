@@ -691,7 +691,7 @@ https://github.com/facebook/rocksdb/wiki/A-Tutorial-of-RocksDB-SST-formats
 
     Wraps BlockBasedTableFactory of RocksDB.
 
-    .. py:method:: __init__(index_type='binary_search', hash_index_allow_collision=True, checksum='crc32', block_cache, block_cache_compressed, filter_policy=None, no_block_cache=False, block_size=None, block_size_deviation=None, block_restart_interval=None, whole_key_filtering=None):
+    .. py:method:: __init__(index_type='binary_search', hash_index_allow_collision=True, checksum='crc32', block_cache, filter_policy=None, no_block_cache=False, block_size=None, block_size_deviation=None, block_restart_interval=None, whole_key_filtering=None):
 
 
     :param string index_type:
@@ -719,11 +719,6 @@ https://github.com/facebook/rocksdb/wiki/A-Tutorial-of-RocksDB-SST-formats
         If ``None``, rocksdb will automatically create and use an 8MB internal cache.
         If not ``None`` use the specified cache for blocks. In that case it must
         be an instance of :py:class:`rocksdb.LRUCache`
-
-    :param block_cache_compressed:
-        If ``None``, rocksdb will not use a compressed block cache.
-        If not ``None`` use the specified cache for compressed blocks. In that
-        case it must be an instance of :py:class:`rocksdb.LRUCache`
 
     :param filter_policy:
         If not ``None`` use the specified filter policy to reduce disk reads.

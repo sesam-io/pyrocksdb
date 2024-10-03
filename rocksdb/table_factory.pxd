@@ -28,7 +28,6 @@ cdef extern from "rocksdb/table.h" namespace "rocksdb":
         int block_restart_interval
         cpp_bool whole_key_filtering
         shared_ptr[Cache] block_cache
-        shared_ptr[Cache] block_cache_compressed
         uint32_t format_version
         cpp_bool partition_filters
         uint64_t metadata_block_size

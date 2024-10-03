@@ -23,8 +23,7 @@ A more production ready open can look like this ::
 
     opts.table_factory = rocksdb.BlockBasedTableFactory(
         filter_policy=rocksdb.BloomFilterPolicy(10),
-        block_cache=rocksdb.LRUCache(2 * (1024 ** 3)),
-        block_cache_compressed=rocksdb.LRUCache(500 * (1024 ** 2)))
+        block_cache=rocksdb.LRUCache(2 * (1024 ** 3)))
 
     db = rocksdb.DB("test.db", opts)
 
